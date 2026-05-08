@@ -15,7 +15,7 @@ import {
   CloseOutlined, ReceiptOutlined, PersonOutlined,
   CalendarTodayOutlined, AttachMoneyOutlined,
   DescriptionOutlined, CancelOutlined, CheckCircleOutlined,
-  HourglassEmptyOutlined, DownloadOutlined
+  HourglassEmptyOutlined, DownloadOutlined ,   EditOutlined
 } from '@mui/icons-material'
 import { enregistrementAPI } from '@/lib/api'
 import StatutBadge from '@/components/enregistrements/StatutBadge'
@@ -438,17 +438,35 @@ export default function MesEnregistrementsPage() {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="small" variant="outlined"
-                    startIcon={loadingDetail
-                      ? <CircularProgress size={14} />
-                      : <VisibilityOutlined />
-                    }
-                    onClick={() => ouvrirDetail(e.id)}
-                    disabled={loadingDetail}
-                  >
-                    Voir
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={
+                        loadingDetail
+                          ? <CircularProgress size={14} />
+                          : <VisibilityOutlined />
+                      }
+                      onClick={() => ouvrirDetail(e.id)}
+                      disabled={loadingDetail}
+                    >
+                      Voir
+                    </Button>
+
+                    {e.statut === 'rejete' && e.est_modifiable && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        startIcon={<EditOutlined />}
+                        onClick={() => router.push(`/caissier/modification/${e.id}`)}
+                      >
+                        Modifier
+                      </Button>
+                    )}
+
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
