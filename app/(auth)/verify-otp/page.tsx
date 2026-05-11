@@ -71,34 +71,52 @@ export default function VerifyOtpPage() {
   }
 
   const handleSubmit = async () => {
-    const code = otp.join('')
-    if (code.length < 6) {
-      enqueueSnackbar('Veuillez entrer le code complet à 6 chiffres.', { variant: 'warning' })
-      return
-    }
-    setLoading(true)
-    try {
-      const { data } = await authAPI.verifyOtp({ email: pendingEmail!, otp: code })
-      setAuth(data.user, data.access, data.refresh)
-      enqueueSnackbar('Authentification réussie ! Bienvenue.', { variant: 'success' })
-      const routes: Record<string, string> = {
-        caissier:   '/caissier',
-        conformite: '/conformite',
-        superadmin: '/admin/utilisateurs',
-      }
-      router.push(routes[data.user.role] || '/')
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { non_field_errors?: string[]; detail?: string } } }
-      const msg = e.response?.data?.non_field_errors?.[0]
-              || e.response?.data?.detail
-              || 'Code invalide ou expiré.'
-      enqueueSnackbar(msg, { variant: 'error' })
-      setOtp(['', '', '', '', '', ''])
-      inputsRef.current[0]?.focus()
-    } finally {
-      setLoading(false)
-    }
+  const code = otp.join('')
+
+  if (code.length < 6) {
+    enqueueSnackbar('Veuillez entrer le code complet à 6 chiffres.', { variant: 'warning' })
+    return
   }
+
+  setLoading(true)
+
+  try {
+    const { data } = await authAPI.verifyOtp({
+      email: pendingEmail!,
+      otp: code,
+    })
+
+    // 🔥 1 seule fois
+    setAuth(data.user, data.access, data.refresh)
+
+    enqueueSnackbar('Authentification réussie ! Bienvenue.', { variant: 'success' })
+
+    const routes: Record<string, string> = {
+      caissier: '/caissier',
+      conformite: '/conformite',
+      superadmin: '/admin/utilisateurs',
+    }
+
+    // 🔥 important : laisser React/Zustand respirer
+    setTimeout(() => {
+      router.replace(routes[data.user.role] || '/')
+    }, 100)
+
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { detail?: string } } }
+
+    enqueueSnackbar(
+      e.response?.data?.detail || 'Code invalide ou expiré.',
+      { variant: 'error' }
+    )
+
+    setOtp(['', '', '', '', '', ''])
+    inputsRef.current[0]?.focus()
+
+  } finally {
+    setLoading(false)
+  }
+}
 
   const handleResend = async () => {
     if (!pendingEmail) return

@@ -13,7 +13,7 @@ import {
 import {
   AddCircleOutlined, SearchOutlined, VisibilityOutlined,
   CloseOutlined, ReceiptOutlined, PersonOutlined,
-  CalendarTodayOutlined, AttachMoneyOutlined,
+  CalendarTodayOutlined, AttachMoneyOutlined,BadgeOutlined,
   DescriptionOutlined, CancelOutlined, CheckCircleOutlined,
   HourglassEmptyOutlined, DownloadOutlined ,   EditOutlined
 } from '@mui/icons-material'
@@ -28,23 +28,25 @@ interface Document {
   uploaded_at:      string
 }
 
+// ── Interface mise à jour ──────────────────────────
 interface Enregistrement {
-  id:                 number
-  nom_client:         string
-  prenom_client:      string
-  montant:            string
-  date_paiement:      string
-  statut:             'en_attente' | 'valide' | 'rejete'
-  documents_complets: boolean
-  motif_rejet?:       string
-  caissier_nom?:      string
-  verifie_par_nom?:   string
-  verifie_le?:        string
-  est_modifiable?:    boolean
-  created_at?:        string
-  documents?:         Document[]
+  id:                  number
+  nom_client:          string
+  prenom_client:       string
+  type_piece:          string          // ✅ remplace montant
+  type_piece_display:  string          // ✅ nouveau
+  numero_piece:        string          // ✅ nouveau
+  date_paiement:       string
+  statut:              'en_attente' | 'valide' | 'rejete'
+  documents_complets:  boolean
+  motif_rejet?:        string
+  caissier_nom?:       string
+  verifie_par_nom?:    string
+  verifie_le?:         string
+  est_modifiable?:     boolean
+  created_at?:         string
+  documents?:          Document[]
 }
-
 type FiltreStatut = 'tous' | 'en_attente' | 'valide' | 'rejete'
 
 // ── Icône selon statut ──────────────────────────────────────
@@ -191,18 +193,15 @@ function ModalDetail({
               />
               <Divider />
               <InfoRow
-                icon={<AttachMoneyOutlined fontSize="small" />}
-                label="Montant"
-                value={`${Number(enreg.montant).toLocaleString('fr-FR')} FCFA`}
-                valueColor="primary.main"
+                icon={<BadgeOutlined fontSize="small" />}
+                label="Type de pièce"
+                value={enreg.type_piece_display}
               />
               <Divider />
               <InfoRow
-                icon={<CalendarTodayOutlined fontSize="small" />}
-                label="Date de paiement"
-                value={new Date(enreg.date_paiement).toLocaleDateString('fr-FR', {
-                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                })}
+                icon={<BadgeOutlined fontSize="small" />}
+                label="Numéro de pièce"
+                value={enreg.numero_piece}
               />
             </CardContent>
           </Card>
@@ -387,9 +386,9 @@ export default function MesEnregistrementsPage() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.main' }}>
-              {['Client', 'Montant', 'Date paiement', 'Docs', 'Statut', 'Actions'].map((h) => (
-                <TableCell key={h} sx={{ color: 'white', fontWeight: 700 }}>{h}</TableCell>
-              ))}
+              {['Client', 'Pièce d\'identité', 'Date paiement', 'Docs', 'Statut', 'Actions'].map((h) => (
+              <TableCell key={h} sx={{ color: 'white', fontWeight: 700 }}>{h}</TableCell>
+            ))}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -413,9 +412,14 @@ export default function MesEnregistrementsPage() {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {Number(e.montant).toLocaleString('fr-FR')} FCFA
-                  </Typography>
+                  <Box>
+                    <Typography sx={{ fontWeight: 600, fontSize: 13 }}>
+                      {e.type_piece_display}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {e.numero_piece}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell>
                   {new Date(e.date_paiement).toLocaleDateString('fr-FR')}

@@ -21,30 +21,39 @@ import StatutBadge from '@/components/enregistrements/StatutBadge'
 
 // ── Types ──────────────────────────────────────────
 interface Enregistrement {
-  id:                 number
-  nom_client:         string
-  prenom_client:      string
-  montant:            string
-  date_paiement:      string
-  statut:             'en_attente' | 'valide' | 'rejete'
-  documents_complets: boolean
-  caissier_nom:       string
-  created_at:         string
+  id:                  number
+  nom_client:          string
+  prenom_client:       string
+  type_piece:          string         // ✅
+  type_piece_display:  string         // ✅
+  numero_piece:        string         // ✅
+  date_paiement:       string
+  statut:              'en_attente' | 'valide' | 'rejete'
+  documents_complets:  boolean
+  caissier_nom:        string
+  created_at:          string
 }
 
 interface Stats {
-  total:               number
-  en_attente:          number
-  valides:             number
-  rejetes:             number
-  montant_total_valide: number
+  total:      number
+  en_attente: number
+  valides:    number
+  rejetes:    number
   par_caissier: {
     caissier__nom:    string
     caissier__prenom: string
     total:            number
-    montant:          number
+    type_piece_display?: number
+    numero_piece?: number
+
   }[]
+  par_type_piece: {
+    type_piece: string
+    total:      number
+  }[]
+  docs_incomplets: number
 }
+
 
 type MuiColor = 'primary' | 'warning' | 'success' | 'error'
 
@@ -234,19 +243,13 @@ export default function ConformiteDashboardPage() {
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <TrendingUpOutlined color="success" />
+                    <TrendingUpOutlined color="primary" />
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Montant total validé
+                      Taux de traitement
                     </Typography>
                   </Box>
-                  <Typography variant="h4" color="success.main" sx={{ fontWeight: 800 }}>
-                    {Number(stats?.montant_total_valide ?? 0).toLocaleString('fr-FR')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    FCFA
-                  </Typography>
 
-                  <Divider sx={{ my: 2 }} />
+                  <Divider sx={{ mb: 2 }} />
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -313,7 +316,10 @@ export default function ConformiteDashboardPage() {
                           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                             <Chip label={`${c.total} dossiers`} color="primary" size="small" />
                             <Typography variant="body2" color="success.main" sx={{ fontWeight: 700 }}>
-                              {Number(c.montant ?? 0).toLocaleString('fr-FR')} FCFA
+                              {c.type_piece_display}
+                            </Typography>
+                            <Typography variant="body2" color="success.main" sx={{ fontWeight: 700 }}>
+                              {c.numero_piece}
                             </Typography>
                           </Box>
                         </Box>
@@ -402,7 +408,7 @@ export default function ConformiteDashboardPage() {
                 <Table>
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                      {['Client', 'Caissier', 'Montant', 'Date', 'Docs', 'Statut', 'Action'].map((h) => (
+                      {['Client', 'Caissier', 'Pièce d\'identité', 'Date', 'Docs', 'Statut', 'Action'].map((h) => (
                         <TableCell key={h} sx={{ fontWeight: 700, color: '#475569' }}>{h}</TableCell>
                       ))}
                     </TableRow>
@@ -431,7 +437,11 @@ export default function ConformiteDashboardPage() {
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'primary.main' }}>
-                            {Number(e.montant).toLocaleString('fr-FR')} FCFA
+                            {e.type_piece_display}
+                          </Typography>
+
+                          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'primary.main' }}>
+                            {e.numero_piece}
                           </Typography>
                         </TableCell>
                         <TableCell>

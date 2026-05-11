@@ -58,18 +58,35 @@ interface VerifyOtpResponse {
   }
 }
 
+// interface StatsResponse {
+//   total:               number
+//   en_attente:          number
+//   valides:             number
+//   rejetes:             number
+//   montant_total_valide: number
+//   par_caissier: {
+//     caissier__nom:    string
+//     caissier__prenom: string
+//     total:            number
+//     montant:          number
+//   }[]
+// }
+
 interface StatsResponse {
-  total:               number
-  en_attente:          number
-  valides:             number
-  rejetes:             number
-  montant_total_valide: number
+  total:           number
+  en_attente:      number
+  valides:         number
+  rejetes:         number
   par_caissier: {
     caissier__nom:    string
     caissier__prenom: string
     total:            number
-    montant:          number
   }[]
+  par_type_piece: {   // ✅ ajouté
+    type_piece: string
+    total:      number
+  }[]
+  docs_incomplets: number  // ✅ ajouté
 }
 
 // ── Auth ──────────────────────────────────────
