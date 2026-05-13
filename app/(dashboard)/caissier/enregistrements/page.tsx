@@ -56,6 +56,8 @@ const StatutIcon = ({ statut }: { statut: Enregistrement['statut'] }) => {
   return <HourglassEmptyOutlined sx={{ color: 'warning.main', fontSize: 28 }} />
 }
 
+
+
 // ── Ligne info dans la modal ────────────────────────────────
 const InfoRow = ({ icon, label, value, valueColor }: {
   icon:        React.ReactNode
@@ -286,35 +288,57 @@ export default function MesEnregistrementsPage() {
   const [statut, setStatut]     = useState<FiltreStatut>('tous')
   const [page, setPage]         = useState(0)
   const [total, setTotal]       = useState(0)
+  const [dateDebut, setDateDebut] = useState('')
+  const [dateFin,   setDateFin]   = useState('')
 
   // Modal
   const [selected, setSelected]       = useState<Enregistrement | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
 
-  const charger = useCallback(async (q: string, s: FiltreStatut, p: number) => {
-    setLoading(true)
-    setError('')
-    try {
-      const params: Record<string, string | number> = {
-        search: q, page: p + 1, page_size: 10,
-      }
-      if (s !== 'tous') params.statut = s
-      const { data } = await enregistrementAPI.liste(params)
-      setEnregistrements(data.results || data)
-      setTotal(data.count ?? (data.results || data).length)
-    } catch {
-      setError('Erreur lors du chargement.')
-    } finally {
-      setLoading(false)
+  // const charger = useCallback(async (q: string, s: FiltreStatut, p: number) => {
+  //   setLoading(true)
+  //   setError('')
+  //   try {
+  //     const params: Record<string, string | number> = {
+  //       search: q, page: p + 1, page_size: 10,
+  //     }
+  //     if (s !== 'tous') params.statut = s
+  //     const { data } = await enregistrementAPI.liste(params)
+  //     setEnregistrements(data.results || data)
+  //     setTotal(data.count ?? (data.results || data).length)
+  //   } catch {
+  //     setError('Erreur lors du chargement.')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }, [])
+
+  const charger = useCallback(async (q: string, s: FiltreStatut, p: number, dd: string, df: string) => {
+  setLoading(true)
+  setError('')
+  try {
+    const params: Record<string, string | number> = {
+      search: q, page: p + 1, page_size: 10,
     }
-  }, [])
+    if (s !== 'tous') params.statut    = s
+    if (dd)           params.date_debut = dd
+    if (df)           params.date_fin   = df
 
+    const { data } = await enregistrementAPI.liste(params)
+    setEnregistrements(data.results || data)
+    setTotal(data.count ?? (data.results || data).length)
+  } catch {
+    setError('Erreur lors du chargement.')
+  } finally {
+    setLoading(false)
+  }
+}, [])
   useEffect(() => {
-    const timer = setTimeout(() => { setPage(0); charger(search, statut, 0) }, 400)
+    const timer = setTimeout(() => { setPage(0); charger(search, statut, 0, dateDebut, dateFin) }, 400)
     return () => clearTimeout(timer)
-  }, [search])
+  }, [search, dateDebut, dateFin])
 
-  useEffect(() => { charger(search, statut, page) }, [statut, page])
+  useEffect(() => { charger(search, statut, page, dateDebut, dateFin) }, [statut, page, dateDebut, dateFin])
 
   const handleStatut = (_: React.MouseEvent<HTMLElement>, val: FiltreStatut | null) => {
     if (!val) return
@@ -332,6 +356,8 @@ export default function MesEnregistrementsPage() {
       setLoadingDetail(false)
     }
   }
+
+  // ── Ajout dans les states ──
 
   return (
     <Box>
@@ -376,6 +402,38 @@ export default function MesEnregistrementsPage() {
             <ToggleButton value="valide"     sx={{ color: 'success.main' }}>Validés</ToggleButton>
             <ToggleButton value="rejete"     sx={{ color: 'error.main'   }}>Rejetés</ToggleButton>
           </ToggleButtonGroup>
+
+          {/* ── Filtres date ── */}
+<TextField
+  label="Du"
+  type="date"
+  size="small"
+  value={dateDebut}
+  onChange={(e) => { setDateDebut(e.target.value); setPage(0) }}
+  slotProps={{ inputLabel: { shrink: true } }}
+  sx={{ width: 160 }}
+/>
+<TextField
+  label="Au"
+  type="date"
+  size="small"
+  value={dateFin}
+  onChange={(e) => { setDateFin(e.target.value); setPage(0) }}
+  slotProps={{ inputLabel: { shrink: true } }}
+  sx={{ width: 160 }}
+/>
+
+{/* Bouton reset si des dates sont sélectionnées */}
+{(dateDebut || dateFin) && (
+  <Button
+    size="small"
+    variant="outlined"
+    color="inherit"
+    onClick={() => { setDateDebut(''); setDateFin('') }}
+  >
+    Effacer dates
+  </Button>
+)}
         </CardContent>
       </Card>
 

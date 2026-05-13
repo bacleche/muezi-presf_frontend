@@ -31,20 +31,39 @@ export default function VerifyOtpPage() {
     inputsRef.current[0]?.focus()
   }, [])
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(timer)
-          enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', { variant: 'warning' })
-          return 0
-        }
-        return c - 1
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCountdown((c) => {
+  //       if (c <= 1) {
+  //         clearInterval(timer)
+  //         enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', { variant: 'warning' })
+  //         return 0
+  //       }
+  //       return c - 1
+  //     })
+  //   }, 1000)
+  //   return () => clearInterval(timer)
+  // }, [])
 
+
+  useEffect(() => {
+  if (countdown <= 0) return
+
+  const timer = setInterval(() => {
+    setCountdown((c) => c - 1)
+  }, 1000)
+
+  return () => clearInterval(timer)
+}, [countdown])
+
+// Effet séparé pour la snackbar — réagit quand countdown atteint 0
+useEffect(() => {
+  if (countdown === 0) {
+    enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', {
+      variant: 'warning',
+    })
+  }
+}, [countdown])
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
@@ -119,12 +138,17 @@ export default function VerifyOtpPage() {
 }
 
   const handleResend = async () => {
-    if (!pendingEmail) return
+  if (!pendingEmail) return
+  try {
+    await authAPI.resendOtp({ email: pendingEmail })
     setCountdown(300)
     setOtp(['', '', '', '', '', ''])
     inputsRef.current[0]?.focus()
     enqueueSnackbar('Un nouveau code a été envoyé à votre adresse email.', { variant: 'info' })
+  } catch {
+    enqueueSnackbar("Erreur lors du renvoi du code. Réessayez.", { variant: 'error' })
   }
+}
 
   return (
     <Box sx={{

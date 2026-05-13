@@ -11,7 +11,7 @@ import {
   VerifiedUserOutlined, BarChartOutlined,
   PeopleOutlined, HistoryOutlined, MenuOutlined,
   CloseOutlined, DashboardCustomizeOutlined,
-  NotificationsOutlined, ShieldOutlined, LogoutOutlined , PendingActionsOutlined
+  NotificationsOutlined, ShieldOutlined,  FolderOutlined ,LogoutOutlined , PendingActionsOutlined , BusinessOutlined
 } from '@mui/icons-material'
 import useAuthStore from '@/store/authStore'
 
@@ -34,19 +34,21 @@ const menuParRole: MenuParRole = {
     { label: 'Tableau de bord',       icon: <DashboardCustomizeOutlined />, href: '/caissier' },
     { label: 'Nouvel enregistrement', icon: <AddCircleOutlined />,          href: '/caissier/nouveau' },
     { label: 'Mes enregistrements',   icon: <ListAlt />,                    href: '/caissier/enregistrements' },
-    { label: 'Notifications',         icon: <NotificationsOutlined />,      href: '/caissier/notifications' },
   ],
   conformite: [
   { label: 'Tableau de bord',    icon: <DashboardOutlined />,       href: '/conformite' },
   { label: 'File de validation', icon: <PendingActionsOutlined />,  href: '/conformite/validation' },
-  { label: 'Enregistrements',    icon: <VerifiedUserOutlined />,    href: '/conformite/enregistrements' },
+  // { label: 'Enregistrements',    icon: <VerifiedUserOutlined />,    href: '/conformite/enregistrements' },
+  { label: 'Archives',           icon: <FolderOutlined />,          href: '/conformite/archives' },  // ← nouveau
   { label: 'Statistiques',       icon: <BarChartOutlined />,        href: '/conformite/stats' },
-  { label: 'Notifications',      icon: <NotificationsOutlined />,   href: '/conformite/notifications' },
 ],
   superadmin: [
-    { label: 'Utilisateurs', icon: <PeopleOutlined />,  href: '/admin/utilisateurs' },
-    { label: 'Audit',        icon: <HistoryOutlined />, href: '/admin/audit' },
-  ],
+  { label: 'Tableau de bord', icon: <DashboardOutlined />,    href: '/admin' },
+  { label: 'Utilisateurs',   icon: <PeopleOutlined />,        href: '/admin/utilisateurs' },
+  { label: 'Agences',        icon: <BusinessOutlined />,      href: '/admin/agences' },
+  { label: 'Statistiques',   icon: <BarChartOutlined />,      href: '/admin/stats' },
+  { label: 'Journal d\'audit', icon: <HistoryOutlined />,     href: '/admin/logs' },
+],
 }
 
 function DrawerContent({ onClose }: { onClose?: () => void }) {

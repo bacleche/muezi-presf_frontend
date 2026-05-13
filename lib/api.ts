@@ -101,6 +101,9 @@ export const authAPI = {
     api.post('/auth/refresh/', data),
 
   me: () => api.get('/users/me/'),
+
+  resendOtp: (data: { email: string }) =>
+    api.post('/auth/resend_otp/', data),
 }
 
 // ── Enregistrements ───────────────────────────
@@ -128,6 +131,11 @@ export const enregistrementAPI = {
       params,
       responseType: 'blob',
     }),
+
+    telechargerZip: (id: number) =>
+    api.get(`/enregistrements/${id}/telecharger_zip/`, {
+      responseType: 'blob',
+    }),
 }
 
 // ── Documents ─────────────────────────────────
@@ -142,9 +150,28 @@ export const documentAPI = {
 }
 
 // ── Utilisateurs ──────────────────────────────
+// export const userAPI = {
+//   liste:    () =>
+//     api.get('/users/'),
+
+//   creer:    (data: object) =>
+//     api.post('/users/', data),
+
+//   modifier: (id: number, data: object) =>
+//     api.patch(`/users/${id}/`, data),
+
+//   toggle:   (id: number) =>
+//     api.post(`/users/${id}/toggle_actif/`),
+
+//   me:       () =>
+//     api.get('/users/me/'),
+// }
+
+
+// ── Utilisateurs ──────────────────────────────
 export const userAPI = {
-  liste:    () =>
-    api.get('/users/'),
+  liste:    (params?: object) =>        // ← ajout params
+    api.get('/users/', { params }),
 
   creer:    (data: object) =>
     api.post('/users/', data),
@@ -157,8 +184,25 @@ export const userAPI = {
 
   me:       () =>
     api.get('/users/me/'),
+
+  changerMotDePasse: (id: number, data: { old_password: string; new_password: string }) =>
+    api.post(`/users/${id}/change_password/`, data),
 }
 
+// ── Agences ───────────────────────────────────
+export const agenceAPI = {
+  liste:    (params?: object) =>
+    api.get('/agences/', { params }),
+
+  detail:   (id: number) =>
+    api.get(`/agences/${id}/`),
+
+  creer:    (data: object) =>
+    api.post('/agences/', data),
+
+  modifier: (id: number, data: object) =>
+    api.patch(`/agences/${id}/`, data),
+}
 // ── Audit ─────────────────────────────────────
 export const auditAPI = {
   liste: (params?: object) =>

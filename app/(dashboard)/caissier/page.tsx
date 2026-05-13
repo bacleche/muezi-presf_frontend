@@ -19,6 +19,7 @@ interface Enregistrement {
   nom_client:    string
   prenom_client: string
   montant:       string
+  numero_piece:  string
   date_paiement: string
   statut:        'en_attente' | 'valide' | 'rejete'
   documents_complets: boolean
@@ -196,13 +197,10 @@ useEffect(() => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <TrendingUpOutlined color="success" />
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Montant validé
+                  Monitoring
                 </Typography>
               </Box>
-              <Typography variant="h4" color="success.main" sx={{ fontWeight: 800 }}>
-                {Number(stats?.montant_total_valide ?? 0).toLocaleString('fr-FR')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">FCFA</Typography>
+         
 
               <Divider sx={{ my: 2 }} />
 
@@ -278,11 +276,11 @@ useEffect(() => {
                         </Avatar>
                         <Box>
                           <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                            {enreg.prenom_client} {enreg.nom_client}
+                            {enreg.prenom_client} {enreg.nom_client} •{' '}
+                            {enreg.numero_piece}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {new Date(enreg.date_paiement).toLocaleDateString('fr-FR')} •{' '}
-                            {Number(enreg.montant).toLocaleString('fr-FR')} FCFA
+                            {new Date(enreg.date_paiement).toLocaleDateString('fr-FR')} 
                           </Typography>
                         </Box>
                       </Box>

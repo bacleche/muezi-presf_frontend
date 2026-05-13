@@ -45,20 +45,43 @@ interface Enregistrement {
 }
 
 // ── Composant info row ─────────────────────────────
-const InfoRow = ({
-  icon, label, value
-}: {
-  icon: React.ReactNode
-  label: string
-  value: React.ReactNode
+// const InfoRow = ({
+//   icon, label, value
+// }: {
+//   icon: React.ReactNode
+//   label: string
+//   value: React.ReactNode
+// }) => (
+//   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.5 }}>
+//     <Box sx={{ color: 'primary.main', mt: 0.3, flexShrink: 0 }}>{icon}</Box>
+//     <Box sx={{ flexGrow: 1 }}>
+//       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+//         {label}
+//       </Typography>
+//       <Typography variant="body2" sx={{ fontWeight: 600 }}>
+//         {value}
+//       </Typography>
+//     </Box>
+//   </Box>
+// )
+
+const InfoRow = ({ icon, label, value, valueColor }: {
+  icon:        React.ReactNode
+  label:       string
+  value:       React.ReactNode
+  valueColor?: string
 }) => (
-  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.5 }}>
-    <Box sx={{ color: 'primary.main', mt: 0.3, flexShrink: 0 }}>{icon}</Box>
+  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.2 }}>
+    <Box sx={{ color: 'text.secondary', mt: 0.2, flexShrink: 0 }}>{icon}</Box>
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+      <Typography
+        component="div"     
+        variant="body2"
+        sx={{ fontWeight: 600, color: valueColor || 'text.primary' }}
+      >
         {value}
       </Typography>
     </Box>

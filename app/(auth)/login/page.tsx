@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import {
   Box, Card, TextField, Button, Typography,
-  CircularProgress, InputAdornment, IconButton, Fade
+  CircularProgress, InputAdornment, IconButton, Fade , Alert
 } from '@mui/material'
 import {
   Visibility, VisibilityOff, LockOutlined,
@@ -18,6 +19,13 @@ export default function LoginPage() {
   const { enqueueSnackbar } = useSnackbar()
   const setAuth         = useAuthStore((s) => s.setAuth)
   const setPendingEmail = useAuthStore((s) => s.setPendingEmail)
+
+//-------------------inactivity timer----------------------------------
+
+  const searchParams = useSearchParams()
+  const raison       = searchParams.get('raison')
+//------------------------------------------------------------------------
+
 
   const [form, setForm]         = useState({ email: '', password: '' })
   const [showPass, setShowPass] = useState(false)
@@ -124,6 +132,11 @@ export default function LoginPage() {
             justifyContent: 'center',
             p: { xs: 4, md: 8 },
           }}>
+            {raison === 'inactivite' && (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                  Vous avez été déconnecté après 30 minutes d'inactivité.
+                </Alert>
+              )}
             <Box sx={{ width: '100%', maxWidth: 360 }}>
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b' }} gutterBottom>

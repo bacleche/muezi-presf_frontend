@@ -1,6 +1,6 @@
 'use client'
 import {
-  AppBar, Toolbar, IconButton, Tooltip, Box,
+  AppBar, Toolbar, IconButton, Tooltip, Box, Chip,
   Typography, Menu, MenuItem, Avatar, Divider,
   Badge, List, ListItem, ListItemText
 } from '@mui/material'
@@ -12,7 +12,12 @@ import {
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import useAuthStore from '@/store/authStore'
-import useNotifications from '@/components/hooks/useNotifications'
+import useNotifications, { type Notification } from '@/components/hooks/useNotifications'
+
+
+// Ajoutez l'import
+
+// Dans le composant, récupérez le user (déjà présent) et ajoutez la fonction de navigation
 
 export default function Header() {
   const router   = useRouter()
@@ -24,6 +29,22 @@ export default function Header() {
   const { notifications, markRead } = useNotifications()
   const unread = notifications.filter((n) => !n.is_read).length
 
+
+const handleNotifClick = (n: Notification) => {
+  if (!n.is_read) markRead(n.id)
+
+  if (n.enregistrement) {
+    if (user?.role === 'conformite') {
+      router.push(`/conformite/${n.enregistrement}`)
+    } else if (user?.role === 'caissier') {
+      router.push(`/caissier/enregistrements/${n.enregistrement}`)
+    } else if (user?.role === 'superadmin') {
+      router.push(`/admin/enregistrements/${n.enregistrement}`)
+    }
+  }
+
+  handleNotifClose()
+}
   // ── Menu profil ──────────────────────────────────────
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
   const openProfile = Boolean(profileAnchor)
@@ -35,6 +56,16 @@ export default function Header() {
   const openNotif = Boolean(notifAnchor)
   const handleNotifOpen  = (e: React.MouseEvent<HTMLElement>) => setNotifAnchor(e.currentTarget)
   const handleNotifClose = () => setNotifAnchor(null)
+
+
+  //--------------------------------------------
+
+  const ROLE_LABELS: Record<string, string> = {
+  caissier:   'Caissier',
+  conformite: 'Conformité',
+  superadmin: 'Super Admin',
+}
+
 
   if (!hydrated) return null
 
@@ -113,7 +144,7 @@ export default function Header() {
                 {notifications.slice(0, 8).map((n, i) => (
                   <ListItem
                       key={n.id}                                        // ← utilise n.id, pas i
-                      onClick={() => !n.is_read && markRead(n.id)}      // ← marquer lu au clic
+                      onClick={() => handleNotifClick(n)}      // ← marquer lu au clic
                       sx={{
                         cursor: 'pointer',                              // ← ajout
                         bgcolor: n.is_read ? 'transparent' : '#f0f9ff',
@@ -144,7 +175,7 @@ export default function Header() {
             </IconButton>
           </Tooltip>
 
-          <Menu
+          {/* <Menu
             anchorEl={profileAnchor}
             open={openProfile}
             onClose={handleProfileClose}
@@ -167,8 +198,38 @@ export default function Header() {
               <LogoutOutlined fontSize="small" sx={{ mr: 1 }} />
               Déconnexion
             </MenuItem>
-          </Menu>
+          </Menu> */}
 
+
+          <Menu
+            anchorEl={profileAnchor}
+            open={openProfile}
+            onClose={handleProfileClose}
+            slotProps={{ paper: { sx: { minWidth: 220 } } }}
+          >
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {user?.prenom} {user?.nom}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {user?.email}
+              </Typography>
+              <Chip
+                  label={ROLE_LABELS[user?.role ?? ''] ?? user?.role}
+                  size="small"
+                  sx={{ mt: 0.5, height: 20, fontSize: 11 }}
+                />
+            </Box>
+            <Divider />
+            <MenuItem onClick={goToProfile}>
+              <AccountCircleOutlined fontSize="small" sx={{ mr: 1 }} />
+              Mon profil
+            </MenuItem>
+            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+              <LogoutOutlined fontSize="small" sx={{ mr: 1 }} />
+              Déconnexion
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>
