@@ -1,13 +1,12 @@
 'use client'
 
-
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Box, Card, Typography, Button,
-  CircularProgress, Fade, IconButton
+  CircularProgress, Fade
 } from '@mui/material'
-import { ArrowBackOutlined, MarkEmailReadOutlined, ShieldOutlined } from '@mui/icons-material'
+import { ShieldOutlined, MarkEmailReadOutlined } from '@mui/icons-material'
 import { useSnackbar } from 'notistack'
 import { authAPI } from '@/lib/api'
 import useAuthStore from '@/store/authStore'
@@ -20,135 +19,133 @@ export default function VerifyOtpPage() {
 
   const [otp, setOtp]             = useState(['', '', '', '', '', ''])
   const [loading, setLoading]     = useState(false)
-  const [countdown, setCountdown] = useState(300)
+  const [countdown, setCountdown] = useState(300) // 5 minutes
   const inputsRef = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
-    if (!pendingEmail) router.push('/login')
+    if (!pendingEmail) {
+      router.push('/login')
+    }
+  }, [pendingEmail, router])
+
+  useEffect(() => {
+    if (pendingEmail) {
+      inputsRef.current[0]?.focus()
+    }
   }, [pendingEmail])
 
   useEffect(() => {
-    inputsRef.current[0]?.focus()
-  }, [])
+    if (countdown <= 0) {
+      enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', { variant: 'warning' })
+      return
+    }
+    const timer = setInterval(() => {
+      setCountdown((c) => c - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [countdown, enqueueSnackbar])
 
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setCountdown((c) => {
-  //       if (c <= 1) {
-  //         clearInterval(timer)
-  //         enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', { variant: 'warning' })
-  //         return 0
-  //       }
-  //       return c - 1
-  //     })
-  //   }, 1000)
-  //   return () => clearInterval(timer)
-  // }, [])
-
-
-  useEffect(() => {
-  if (countdown <= 0) return
-
-  const timer = setInterval(() => {
-    setCountdown((c) => c - 1)
-  }, 1000)
-
-  return () => clearInterval(timer)
-}, [countdown])
-
-// Effet séparé pour la snackbar — réagit quand countdown atteint 0
-useEffect(() => {
-  if (countdown === 0) {
-    enqueueSnackbar('Le code OTP a expiré. Veuillez en demander un nouveau.', {
-      variant: 'warning',
-    })
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
-}, [countdown])
-  const formatTime = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return
+  const handleOtpChange = (value: string, index: number) => {
+    if (isNaN(Number(value))) return
+
     const newOtp = [...otp]
-    newOtp[index] = value.slice(-1)
+    newOtp[index] = value.substring(value.length - 1)
     setOtp(newOtp)
-    if (value && index < 5) inputsRef.current[index + 1]?.focus()
+
+    if (value && index < 5) {
+      inputsRef.current[index + 1]?.focus()
+    }
   }
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      const newOtp = [...otp]
+      newOtp[index - 1] = ''
+      setOtp(newOtp)
       inputsRef.current[index - 1]?.focus()
     }
   }
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''))
-      inputsRef.current[5]?.focus()
-    }
+    e.preventDefault()
+    const text = e.clipboardData.getData('text').trim()
+    if (!/^\d{6}$/.test(text)) return
+
+    const digits = text.split('')
+    setOtp(digits)
+    digits.forEach((digit, i) => {
+      if (inputsRef.current[i]) {
+        inputsRef.current[i]!.value = digit
+      }
+    })
+    inputsRef.current[5]?.focus()
   }
 
-  const handleSubmit = async () => {
-  const code = otp.join('')
-
-  if (code.length < 6) {
-    enqueueSnackbar('Veuillez entrer le code complet à 6 chiffres.', { variant: 'warning' })
-    return
-  }
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!pendingEmail) return
 
   setLoading(true)
-
+  const code = otp.join('')
+  
   try {
-    const { data } = await authAPI.verifyOtp({
-      email: pendingEmail!,
-      otp: code,
+    // ✅ UN SEUL APPEL : On envoie les données et on récupère la réponse de manière unique
+    const response = await authAPI.verifyOtp({ 
+      email: pendingEmail, 
+      otp: code 
     })
-
-    // 🔥 1 seule fois
-    setAuth(data.user, data.access, data.refresh)
-
-    enqueueSnackbar('Authentification réussie ! Bienvenue.', { variant: 'success' })
-
-    const routes: Record<string, string> = {
-      caissier: '/caissier',
-      conformite: '/conformite',
-      superadmin: '/admin/utilisateurs',
+    
+    // On extrait proprement les variables fournies par ton interface de réponse
+    const { user, access, refresh } = response.data
+    
+    // Mise à jour du store centralisé avec l'utilisateur et les jetons d'accès
+    setAuth(user, access, refresh) 
+    enqueueSnackbar('Authentification réussie !', { variant: 'success' })
+    
+    // Redirection dynamique et chirurgicale selon le rôle
+    if (user.role === 'superadmin') {
+      router.push('/admin')
+    } else if (user.role === 'caissier') {
+      router.push('/caissier')
+    } else if (user.role === 'conformite') {
+      router.push('/conformite')
+    } else if (user.role === 'chef_produit') {
+      router.push('/chef-produit')
+    } else if (user.role === 'chef_agence') {
+      router.push('/chef-agence') 
+    } else {
+      router.push('/') // Redirection par défaut si aucun rôle ne correspond
     }
-
-    // 🔥 important : laisser React/Zustand respirer
-    setTimeout(() => {
-      router.replace(routes[data.user.role] || '/')
-    }, 100)
-
   } catch (err: unknown) {
     const e = err as { response?: { data?: { detail?: string } } }
-
-    enqueueSnackbar(
-      e.response?.data?.detail || 'Code invalide ou expiré.',
-      { variant: 'error' }
-    )
-
-    setOtp(['', '', '', '', '', ''])
-    inputsRef.current[0]?.focus()
-
+    const msg = e.response?.data?.detail || 'Code OTP invalide ou expiré.'
+    enqueueSnackbar(msg, { variant: 'error' })
   } finally {
     setLoading(false)
   }
 }
 
   const handleResend = async () => {
-  if (!pendingEmail) return
-  try {
-    await authAPI.resendOtp({ email: pendingEmail })
-    setCountdown(300)
-    setOtp(['', '', '', '', '', ''])
-    inputsRef.current[0]?.focus()
-    enqueueSnackbar('Un nouveau code a été envoyé à votre adresse email.', { variant: 'info' })
-  } catch {
-    enqueueSnackbar("Erreur lors du renvoi du code. Réessayez.", { variant: 'error' })
+    if (!pendingEmail) return
+    setLoading(true)
+    try {
+      await authAPI.login({ email: pendingEmail, password: '' }) // Adapté selon ta logique de renvoi pass-less ou reconnexion
+      setCountdown(300)
+      setOtp(['', '', '', '', '', ''])
+      inputsRef.current[0]?.focus()
+      enqueueSnackbar('Un nouveau code OTP a été envoyé.', { variant: 'info' })
+    } catch {
+      enqueueSnackbar('Erreur lors du renvoi du code.', { variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   return (
     <Box sx={{
@@ -156,224 +153,134 @@ useEffect(() => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#0f172a',
+      backgroundColor: '#090d16',
       backgroundImage: `
-        radial-gradient(circle at 2% 10%, rgba(30,64,175,0.2) 0%, transparent 40%),
-        radial-gradient(circle at 98% 90%, rgba(30,64,175,0.15) 0%, transparent 40%)
+        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(29, 78, 216, 0.1) 0%, transparent 50%)
       `,
       p: 2,
     }}>
-      <Fade in timeout={1000}>
+      <Fade in timeout={800}>
         <Card sx={{
-          display: 'flex',
           width: '100%',
-          maxWidth: 1000,
-          minHeight: 600,
-          borderRadius: 3,
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.05)',
+          maxWidth: 520,
+          borderRadius: 4,
+          boxShadow: '0 30px 60px -15px rgba(0,0,0,0.8)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(20px)',
+          p: { xs: 4, md: 6 },
         }}>
-
-          {/* ── PANNEAU GAUCHE ── */}
-          <Box sx={{
-            width: { xs: 0, md: '45%' },
-            background: '#1e293b',
-            color: 'white',
-            display: { xs: 'none', md: 'flex' },
-            flexDirection: 'column',
-            p: 6,
-            justifyContent: 'space-between',
-            borderRight: '1px solid rgba(255,255,255,0.05)',
-          }}>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
-                <Box sx={{
-                  p: 1, borderRadius: 1.5, bgcolor: '#3b82f6',
-                  display: 'flex', boxShadow: '0 0 20px rgba(59,130,246,0.5)',
-                }}>
-                  <ShieldOutlined />
-                </Box>
-                <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-                  PRESF <span style={{ color: '#3b82f6' }}>ARCHIVIS</span>
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2, mb: 2 }}>
-                Double vérification pour votre sécurité.
-              </Typography>
-              <Typography sx={{ color: '#94a3b8', fontSize: '1.05rem' }}>
-                Un code unique a été envoyé à votre adresse email. Il est valable 5 minutes.
-              </Typography>
+          
+          {/* Logo / Entête */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 5 }}>
+            <Box sx={{
+              p: 1, borderRadius: 2, bgcolor: '#2563eb',
+              display: 'flex', boxShadow: '0 0 20px rgba(37,99,233,0.4)',
+            }}>
+              <ShieldOutlined sx={{ fontSize: 22, color: 'white' }} />
             </Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: 'white', letterSpacing: '0.5px' }}>
+              PRESF <span style={{ color: '#3b82f6', fontWeight: 500 }}>ARCHIVIS</span>
+            </Typography>
+          </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                { num: '1', label: 'Identifiants vérifiés', done: true },
-                { num: '2', label: 'Code OTP reçu par email', done: true },
-                { num: '3', label: 'Accès au dashboard', done: false },
-              ].map((step) => (
-                <Box key={step.num} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    bgcolor: step.done ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                    border: step.done ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 700,
-                    color: step.done ? 'white' : '#64748b',
-                    flexShrink: 0,
-                  }}>
-                    {step.done ? '✓' : step.num}
-                  </Box>
-                  <Typography variant="body2" sx={{
-                    color: step.done ? 'white' : '#64748b',
-                    fontWeight: step.done ? 600 : 400,
-                  }}>
-                    {step.label}
-                  </Typography>
-                </Box>
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <MarkEmailReadOutlined sx={{ fontSize: 50, color: '#3b82f6', mb: 2 }} />
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#f8fafc', mb: 1.5, letterSpacing: '-0.5px' }}>
+              Vérification de sécurité
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#94a3b8', maxWidth: 360, mx: 'auto', lineHeight: 1.5 }}>
+              Nous avons envoyé un code de validation temporaire à l&apos;adresse : <br />
+              <strong style={{ color: '#f1f5f9' }}>{pendingEmail}</strong>
+            </Typography>
+          </Box>
+
+          <form onSubmit={handleSubmit}>
+            {/* Grille des cases OTP */}
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 4 }} onPaste={handlePaste}>
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  ref={(el) => { inputsRef.current[index] = el }}
+                  onChange={(e) => handleOtpChange(e.target.value, index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  style={{
+                    width: '54px',
+                    height: '58px',
+                    fontSize: '1.4rem',
+                    fontWeight: '700',
+                    textAlign: 'center',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+                    color: '#f8fafc',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#3b82f6'
+                    e.target.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.3)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255,255,255,0.08)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
               ))}
             </Box>
-          </Box>
 
-          {/* ── PANNEAU DROIT : OTP ── */}
-          <Box sx={{
-            width: { xs: '100%', md: '55%' },
-            bgcolor: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: { xs: 4, md: 8 },
-          }}>
-            <Box sx={{ width: '100%', maxWidth: 360 }}>
-              <IconButton
-                onClick={() => router.push('/login')}
-                sx={{ mb: 2, ml: -1, color: '#94a3b8', '&:hover': { color: '#1e293b' } }}
-              >
-                <ArrowBackOutlined />
-              </IconButton>
-
-              <Box sx={{ mb: 4 }}>
-                <Box sx={{
-                  width: 56, height: 56, borderRadius: 2,
-                  background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', mb: 2,
-                  boxShadow: '0 8px 16px rgba(59,130,246,0.25)',
-                }}>
-                  <MarkEmailReadOutlined sx={{ fontSize: 28, color: 'white' }} />
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b' }} gutterBottom>
-                  Vérification
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
-                  Code envoyé à
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e40af' }}>
-                  {pendingEmail}
-                </Typography>
-              </Box>
-
-              {/* Cases OTP */}
-              <Box
-                sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 3 }}
-                onPaste={handlePaste}
-              >
-                {otp.map((digit, i) => (
-                  <Box
-                    key={i}
-                    component="input"
-                    ref={(el: HTMLInputElement | null) => { inputsRef.current[i] = el }}
-                    value={digit}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(i, e.target.value)}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(i, e)}
-                    maxLength={1}
-                    inputMode="numeric"
-                    sx={{
-                      width: 52, height: 60,
-                      textAlign: 'center',
-                      fontSize: '1.6rem', fontWeight: 700,
-                      border: '2px solid',
-                      borderColor: digit ? '#1e40af' : '#e2e8f0',
-                      borderRadius: 2, outline: 'none',
-                      bgcolor: digit ? '#eff6ff' : '#f8fafc',
-                      color: '#1e293b',
-                      transition: 'all 0.15s',
-                      fontFamily: 'monospace',
-                      '&:focus': {
-                        borderColor: '#3b82f6',
-                        boxShadow: '0 0 0 3px rgba(59,130,246,0.15)',
-                        bgcolor: '#eff6ff',
-                      },
-                    }}
-                  />
-                ))}
-              </Box>
-
-              {/* Compte à rebours */}
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                {countdown > 0 ? (
-                  <Box sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: 1,
-                    bgcolor: countdown < 60 ? '#fef2f2' : '#f0f9ff',
-                    border: '1px solid',
-                    borderColor: countdown < 60 ? '#fecaca' : '#bae6fd',
-                    borderRadius: 2, px: 2, py: 0.8,
-                  }}>
-                    <Typography variant="body2" sx={{
-                      color: countdown < 60 ? '#dc2626' : '#0369a1',
-                      fontWeight: 600,
-                    }}>
-                      ⏱ Expire dans {formatTime(countdown)}
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{
-                    display: 'inline-flex',
-                    bgcolor: '#fef2f2', border: '1px solid #fecaca',
-                    borderRadius: 2, px: 2, py: 0.8,
-                  }}>
-                    <Typography variant="body2" sx={{ color: '#dc2626', fontWeight: 600 }}>
-                      ⚠️ Code expiré
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-
-              <Button
-                fullWidth variant="contained"
-                onClick={handleSubmit}
-                disabled={loading || otp.join('').length < 6 || countdown === 0}
-                sx={{
-                  py: 1.8, borderRadius: 2,
-                  bgcolor: '#1e293b', textTransform: 'none',
-                  fontSize: '1rem', fontWeight: 700,
-                  '&:hover': { bgcolor: '#0f172a' },
-                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                  mb: 3,
-                }}
-              >
-                {loading
-                  ? <CircularProgress size={24} color="inherit" />
-                  : 'Confirmer le code'
-                }
-              </Button>
-
-              <Typography variant="body2" align="center" sx={{ color: '#94a3b8' }}>
-                Vous n&apos;avez pas reçu le code ?{' '}
-                <span
-                  onClick={countdown === 0 ? handleResend : undefined}
-                  style={{
-                    color: countdown === 0 ? '#3b82f6' : '#cbd5e1',
-                    cursor: countdown === 0 ? 'pointer' : 'not-allowed',
-                    fontWeight: 600,
-                    textDecoration: countdown === 0 ? 'underline' : 'none',
-                  }}
-                >
-                  Renvoyer le code
-                </span>
+            {/* Indicateur de Compte à rebours */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, mb: 4 }}>
+              <Typography variant="body2" sx={{ color: countdown === 0 ? '#ef4444' : '#64748b', fontWeight: 600 }}>
+                {countdown > 0 ? `Le code expire dans : ${formatTime(countdown)}` : 'Le code a expiré'}
               </Typography>
             </Box>
-          </Box>
+
+            <Button
+              type="submit" fullWidth variant="contained"
+              disabled={loading || otp.join('').length < 6 || countdown === 0}
+              sx={{
+                py: 1.8, 
+                borderRadius: 2.5,
+                bgcolor: '#3b82f6',
+                color: '#ffffff',
+                textTransform: 'none',
+                fontSize: '0.95rem', 
+                fontWeight: 700,
+                boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+                mb: 3,
+                '&:hover': { 
+                  bgcolor: '#2563eb',
+                  boxShadow: '0 6px 25px rgba(59, 130, 246, 0.4)',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'rgba(59, 130, 246, 0.2)',
+                  color: 'rgba(255,255,255,0.3)'
+                }
+              }}
+            >
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Valider l\'accès'}
+            </Button>
+
+            <Typography variant="body2" align="center" sx={{ color: '#64748b' }}>
+              Vous n&apos;avez pas reçu de mail ?{' '}
+              <span
+                onClick={countdown === 0 && !loading ? handleResend : undefined}
+                style={{
+                  color: countdown === 0 ? '#3b82f6' : 'rgba(255,255,255,0.2)',
+                  cursor: countdown === 0 ? 'pointer' : 'not-allowed',
+                  fontWeight: 600,
+                  textDecoration: countdown === 0 ? 'underline' : 'none',
+                }}
+              >
+                Renvoyer un code
+              </span>
+            </Typography>
+          </form>
         </Card>
       </Fade>
     </Box>

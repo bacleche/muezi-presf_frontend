@@ -1,7 +1,137 @@
+// import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+
+// const api = axios.create({
+//   baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
+//   headers: { 'Content-Type': 'application/json' },
+// })
+
+// // ── Injecter le token JWT ──────────────────────
+// api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+//   if (typeof window !== 'undefined') {
+//     const token = localStorage.getItem('access_token')
+//     if (token) config.headers.Authorization = `Bearer ${token}`
+//   }
+//   return config
+// })
+
+// // ── Rafraîchir le token si expiré ─────────────
+// api.interceptors.response.use(
+//   (response: AxiosResponse) => response,
+//   async (error) => {
+//     const original = error.config
+//     if (error.response?.status === 401 && !original._retry) {
+//       original._retry = true
+//       try {
+//         const refresh = localStorage.getItem('refresh_token')
+//         // Aligné sur l'endpoint classique SimpleJWT ou ton routage d'authentification
+//         const { data } = await axios.post(
+//           `${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, 
+//           { refresh }
+//         )
+//         localStorage.setItem('access_token', data.access)
+//         original.headers.Authorization = `Bearer ${data.access}`
+//         return api(original)
+//       } catch {
+//         localStorage.clear()
+//         if (typeof window !== 'undefined') window.location.href = '/login'
+//       }
+//     }
+//     return Promise.reject(error)
+//   }
+// )
+
+// // ── Types réponses Authentification ─────────────
+// export interface LoginData {
+//   email:     string
+//   password:  string
+// }
+
+// export interface UserBackend {
+//   id:         number
+//   email:      string
+//   nom:        string
+//   prenom:     string
+//   role:       'superadmin' | 'conformite' | 'chef_produit' | 'admin_agence'
+//   pays:       number | null
+//   agence:     number | null
+//   is_active:  boolean
+// }
+
+// export interface VerifyOtpResponse {
+//   access:  string
+//   refresh: string
+//   user:    UserBackend
+// }
+
+// // ── Endpoints d'API ────────────────────────────
+
+// export interface LoginData {
+//   email:    string;
+//   password: string;
+// }
+
+// // Dans api.ts, modifie l'interface pour qu'elle utilise ton type global ou la structure exacte :
+// export const authAPI = {
+//   login: (data: LoginData) => 
+//     api.post('/auth/login/', data),
+
+//   // Utilise "any" temporairement ici dans la déclaration de la fonction pour l'assouplir
+//   verifyOtp: (data: { email: string; otp: string }) => 
+//     api.post<{ access: string; refresh: string; user: any }>('/auth/verify_otp/', data),
+// }
+
+// export const userAPI = {
+//   liste: (params?: object) =>
+//     api.get('/users/', { params }),
+
+//   creer: (data: object) =>
+//     api.post('/users/', data),
+
+//   modifier: (id: number, data: object) =>
+//     api.patch(`/users/${id}/`, data),
+
+//   toggle: (id: number) =>
+//     api.post(`/users/${id}/toggle_actif/`),
+
+//   me: () =>
+//     api.get('/users/me/'),
+
+//   changerMotDePasse: (id: number, data: { old_password: string; new_password: string }) =>
+//     api.post(`/users/${id}/change_password/`, data),
+// }
+
+// export const archiveAgenceAPI = {
+//   stats: () => api.get('/archives/stats/'),
+//   liste: (params?: object) => api.get('/archives/', { params }),
+//   telechargerZip: (id: number) => api.get(`/archives/${id}/zip/`, { responseType: 'blob' }),
+// }
+
+// export const transactionAPI = {
+//   liste: (params?: object) => api.get('/transactions/', { params }),
+//   telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
+// }
+
+// export const produitAPI = {
+//   liste: () => api.get('/produits/'),
+//   creer: (data: object) => api.post('/produits/', data),
+//   modifier: (id: number, data: object) => api.put(`/produits/${id}/`, data),
+//   supprimer: (id: number) => api.delete(`/produits/${id}/`),
+// }
+// export const agenceAPI = {
+//   liste: (params?: object) =>
+//     api.get('/agences/', { params }),
+
+//   detail: (id: number) =>
+//     api.get(`/agences/${id}/`),
+// }
+
+// export default api
+
+
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -24,7 +154,7 @@ api.interceptors.response.use(
       try {
         const refresh = localStorage.getItem('refresh_token')
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, 
           { refresh }
         )
         localStorage.setItem('access_token', data.access)
@@ -32,181 +162,173 @@ api.interceptors.response.use(
         return api(original)
       } catch {
         localStorage.clear()
-        window.location.href = '/login'
+        if (typeof window !== 'undefined') window.location.href = '/login'
       }
     }
     return Promise.reject(error)
   }
 )
 
-// ── Types réponses ─────────────────────────────
-interface LoginResponse {
-  detail: string
-  email:  string
+// ── Types réponses Authentification ─────────────
+export interface LoginData {
+  email:     string
+  password:  string
 }
 
-interface VerifyOtpResponse {
+export interface UserBackend {
+  id:         number
+  email:      string
+  nom:        string
+  prenom:     string
+  role:       'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence' // Harmonisé ici !
+  pays:       number | null
+  agence:     number | null
+  is_active:  boolean
+}
+
+export interface VerifyOtpResponse {
   access:  string
   refresh: string
-  user: {
-    id:        number
-    email:     string
-    nom:       string
-    prenom:    string
-    role:      'caissier' | 'conformite' | 'superadmin'
-    is_active: boolean
-  }
+  user:    UserBackend
 }
 
-// interface StatsResponse {
-//   total:               number
-//   en_attente:          number
-//   valides:             number
-//   rejetes:             number
-//   montant_total_valide: number
-//   par_caissier: {
-//     caissier__nom:    string
-//     caissier__prenom: string
-//     total:            number
-//     montant:          number
-//   }[]
-// }
+// ── Endpoints d'API ────────────────────────────
 
-interface StatsResponse {
-  total:           number
-  en_attente:      number
-  valides:         number
-  rejetes:         number
-  par_caissier: {
-    caissier__nom:    string
-    caissier__prenom: string
-    total:            number
-  }[]
-  par_type_piece: {   // ✅ ajouté
-    type_piece: string
-    total:      number
-  }[]
-  docs_incomplets: number  // ✅ ajouté
-}
-
-// ── Auth ──────────────────────────────────────
 export const authAPI = {
-  login:     (data: { email: string; password: string }) =>
-    api.post<LoginResponse>('/auth/login/', data),
+  login: (data: LoginData) => 
+    api.post('/auth/login/', data),
 
-  verifyOtp: (data: { email: string; otp: string }) =>
-    api.post<VerifyOtpResponse>('/auth/verify_otp/', data),
-
-  refresh:   (data: { refresh: string }) =>
-    api.post('/auth/refresh/', data),
-
-  me: () => api.get('/users/me/'),
-
-  resendOtp: (data: { email: string }) =>
-    api.post('/auth/resend_otp/', data),
+  verifyOtp: (data: { email: string; otp: string }) => 
+    api.post<{ access: string; refresh: string; user: any }>('/auth/verify_otp/', data),
 }
 
-// ── Enregistrements ───────────────────────────
-export const enregistrementAPI = {
-  liste:     (params?: object) =>
-    api.get('/enregistrements/', { params }),
-
-  detail:    (id: number) =>
-    api.get(`/enregistrements/${id}/`),
-
-  creer:     (data: object) =>
-    api.post('/enregistrements/', data),
-
-  modifier:  (id: number, data: object) =>
-    api.patch(`/enregistrements/${id}/`, data),
-
-  valider:   (id: number, data: { statut: 'valide' | 'rejete'; motif_rejet?: string }) =>
-    api.post(`/enregistrements/${id}/valider/`, data),
-
-  stats:     (params?: object) =>
-    api.get<StatsResponse>('/enregistrements/stats/', { params }),
-
-  exportCsv: (params?: object) =>
-    api.get('/enregistrements/export_csv/', {
-      params,
-      responseType: 'blob',
-    }),
-
-    telechargerZip: (id: number) =>
-    api.get(`/enregistrements/${id}/telecharger_zip/`, {
-      responseType: 'blob',
-    }),
-}
-
-// ── Documents ─────────────────────────────────
-export const documentAPI = {
-  uploader:  (data: FormData) =>
-    api.post('/documents/', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-
-  supprimer: (id: number) =>
-    api.delete(`/documents/${id}/`),
-}
-
-// ── Utilisateurs ──────────────────────────────
-// export const userAPI = {
-//   liste:    () =>
-//     api.get('/users/'),
-
-//   creer:    (data: object) =>
-//     api.post('/users/', data),
-
-//   modifier: (id: number, data: object) =>
-//     api.patch(`/users/${id}/`, data),
-
-//   toggle:   (id: number) =>
-//     api.post(`/users/${id}/toggle_actif/`),
-
-//   me:       () =>
-//     api.get('/users/me/'),
-// }
-
-
-// ── Utilisateurs ──────────────────────────────
 export const userAPI = {
-  liste:    (params?: object) =>        // ← ajout params
+  liste: (params?: object) =>
     api.get('/users/', { params }),
 
-  creer:    (data: object) =>
+  creer: (data: object) =>
     api.post('/users/', data),
 
   modifier: (id: number, data: object) =>
     api.patch(`/users/${id}/`, data),
 
-  toggle:   (id: number) =>
+  toggle: (id: number) =>
     api.post(`/users/${id}/toggle_actif/`),
 
-  me:       () =>
+  me: () =>
     api.get('/users/me/'),
 
   changerMotDePasse: (id: number, data: { old_password: string; new_password: string }) =>
     api.post(`/users/${id}/change_password/`, data),
 }
 
-// ── Agences ───────────────────────────────────
+// ── NOUVEAU : Endpoints PAYS ───────────────────
+export const paysAPI = {
+  liste: (params?: object) => 
+    api.get('/pays/', { params }),
+  
+  detail: (id: number) => 
+    api.get(`/pays/${id}/`),
+  
+  creer: (data: object) => 
+    api.post('/pays/', data),
+  
+  modifier: (id: number, data: object) => 
+    api.patch(`/pays/${id}/`, data),
+  
+  supprimer: (id: number) => 
+    api.delete(`/pays/${id}/`),
+}
+
+// ── NOUVEAU : Endpoints VILLES ─────────────────
+export const villeAPI = {
+  liste: (params?: object) => 
+    api.get('/villes/', { params }),
+  
+  detail: (id: number) => 
+    api.get(`/villes/${id}/`),
+  
+  creer: (data: object) => 
+    api.post('/villes/', data),
+  
+  modifier: (id: number, data: object) => 
+    api.patch(`/villes/${id}/`, data),
+  
+  supprimer: (id: number) => 
+    api.delete(`/villes/${id}/`),
+}
+
 export const agenceAPI = {
-  liste:    (params?: object) =>
+  liste: (params?: object) =>
     api.get('/agences/', { params }),
 
-  detail:   (id: number) =>
+  detail: (id: number) =>
     api.get(`/agences/${id}/`),
 
-  creer:    (data: object) =>
+  creer: (data: object) => 
     api.post('/agences/', data),
 
-  modifier: (id: number, data: object) =>
+  modifier: (id: number, data: object) => 
     api.patch(`/agences/${id}/`, data),
 }
-// ── Audit ─────────────────────────────────────
-export const auditAPI = {
-  liste: (params?: object) =>
-    api.get('/audit/', { params }),
+
+export const archiveAgenceAPI = {
+  stats: () => api.get('/archives/stats/'),
+  liste: (params?: object) => api.get('/archives/', { params }),
+  telechargerZip: (id: number) => api.get(`/archives/${id}/zip/`, { responseType: 'blob' }),
 }
 
+export const transactionAPI = {
+  liste: (params?: object) => api.get('/transactions/', { params }),
+  telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
+}
+
+export const produitAPI = {
+  liste: () => api.get('/produits/'),
+  creer: (data: object) => api.post('/produits/', data),
+  modifier: (id: number, data: object) => api.put(`/produits/${id}/`, data),
+  supprimer: (id: number) => api.delete(`/produits/${id}/`),
+}
+
+// ── NOUVEAU : Endpoints pour les Logs d'Audit ──
+export const auditAPI = {
+  liste: (params?: object) =>
+    api.get('/audit-logs/', { params }), // Ajuste l'URL selon ton routage Django backend (ex: /logs/ ou /audit/)
+  
+  detail: (id: number) =>
+    api.get(`/audit-logs/${id}/`),
+}
+
+// À vérifier/ajouter dans ton lib/api.ts
+export const clientAPI = {
+  liste: (params?: object) => api.get('/clients/', { params }),
+  
+  // Modifiez la méthode creer ici
+  creer: (data: FormData) => api.post('/clients/', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
+  
+  modifier: (id: number, data: object) => api.put(`/clients/${id}/`, data),
+  
+  pieces: (id: number) => api.get(`/clients/${id}/pieces/`),
+  
+  // URL : POST /api/clients/{id}/add-piece/
+ // Dans lib/api.ts
+ajouterPiece: (id: number, data: FormData) => api.post(`/clients/${id}/add-piece/`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' } 
+}),
+
+statschefAgence: () => api.get('/clients/stats-chefagence/'),
+}
+
+export const StatsAPI = {
+  /**
+   * Appelle l'action @action(detail=False, url_path='stats') 
+   * de ton ArchiveAgenceViewSet dans Django
+   */
+  stats: () => 
+    api.get('/archives-agence/stats/'), // Assure-toi que le préfixe correspond à ton router DRF
+}
 export default api

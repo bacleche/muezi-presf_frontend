@@ -2,10 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Optionnel : Ajoute ceci si tu veux éviter des erreurs lors des appels API cross-origin
+
+  // Variables d'environnement
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
+    NEXT_PUBLIC_API_URL:
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
   },
+
+  // Autoriser les accès depuis ton IP locale
+  allowedDevOrigins: ["192.168.100.52"],
 };
 
 export default nextConfig;

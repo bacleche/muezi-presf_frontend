@@ -1,317 +1,222 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
-  Box, Typography, Grid, Card, CardContent,
-  CircularProgress, Alert, Divider, TextField,
-  MenuItem, Chip
+  Box, Typography, Grid, Card, CardContent, 
+  CircularProgress, Alert, Paper, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
-import {
-  HourglassEmptyOutlined, CheckCircleOutlined,
-  CancelOutlined, ReceiptOutlined, BusinessOutlined,
-  PersonOutlined
+import { 
+  Inventory2Outlined, 
+  CheckCircleOutlined, 
+  ErrorOutlined,
+  BusinessOutlined,
+  MapOutlined
 } from '@mui/icons-material'
-import { enregistrementAPI } from '@/lib/api'
+import { StatsAPI } from '@/lib/api'
 
-interface Stats {
-  total:           number
-  en_attente:      number
-  valides:         number
-  rejetes:         number
-  par_caissier: {
-    caissier__nom:    string
-    caissier__prenom: string
-    total:            number
-  }[]
-  par_type_piece: {
-    type_piece: string
-    total:      number
-  }[]
-  docs_incomplets: number
+// Correspondance exacte avec les clés d'annotations renvoyées par ton queryset Django
+interface RepartionItem {
+  produit__nom?: string
+  agence__code?: string
+  agence__nom?: string
+  agence__ville__nom?: string
+  total: number
 }
 
-const TYPE_PIECE_LABELS: Record<string, string> = {
-  cni:      "Carte Nationale d'Identité",
-  passport: 'Passport',
-  niu:      "Numéro d'Identification Unique",
+interface StatsData {
+  total_archives: number
+  archives_completes: number
+  par_produit: RepartionItem[]
+  par_agence: RepartionItem[]
+  par_ville: RepartionItem[]
 }
 
-const StatCard = ({ icon, label, value, color, sub }: {
-  icon:   React.ReactNode
-  label:  string
-  value:  number
-  color:  string
-  sub?:   string
-}) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography variant="caption" color="text.secondary"
-            sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            {label}
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color }}>
-            {value}
-          </Typography>
-          {sub && (
-            <Typography variant="caption" color="text.secondary">{sub}</Typography>
-          )}
-        </Box>
-        <Box sx={{
-          width: 48, height: 48, borderRadius: 2,
-          bgcolor: `${color}18`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color,
-        }}>
-          {icon}
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-)
+// Map pour rendre les codes de produits élégants à l'écran
+const LABELS_PRODUITS: Record<string, string> = {
+  western_union: 'Western Union',
+  change:        'Change',
+  visa:          'VISA',
+  momo:          'MOMO',
+  airtel_money:  'Airtel Money',
+}
 
-export default function AdminStatsPage() {
-  const [stats, setStats]       = useState<Stats | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
-  const [dateDebut, setDateDebut] = useState('')
-  const [dateFin,   setDateFin]   = useState('')
+export default function StatsPage() {
+  const [stats, setStats] = useState<StatsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const charger = async (dd: string, df: string) => {
+  const chargerStats = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const params: Record<string, string> = {}
-      if (dd) params.date_debut = dd
-      if (df) params.date_fin   = df
-      const { data } = await enregistrementAPI.stats(params)
+      const { data } = await StatsAPI.stats()
       setStats(data)
-    } catch {
-      setError('Erreur lors du chargement des statistiques.')
+    } catch (err) {
+      console.error(err)
+      setError('Impossible de récupérer les statistiques du système d’archivage.')
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    chargerStats()
+  }, [chargerStats])
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={40} />
+      </Box>
+    )
   }
 
-  useEffect(() => { charger(dateDebut, dateFin) }, [dateDebut, dateFin])
-
-  const tauxValidation = stats?.total
-    ? Math.round((stats.valides / stats.total) * 100)
-    : 0
-
-  const tauxRejet = stats?.total
-    ? Math.round((stats.rejetes / stats.total) * 100)
-    : 0
+  // Calcul du volume incomplet basé sur tes filtres de complétude Django
+  const totalArchives = stats?.total_archives ?? 0
+  const completes = stats?.archives_completes ?? 0
+  const incompletes = totalArchives - completes
 
   return (
-    <Box>
+    <Box sx={{ p: 1 }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>Statistiques</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Statistiques de Conformité</Typography>
         <Typography variant="body2" color="text.secondary">
-          Vue globale de l'activité sur tous les dossiers
+          Analyse de complétude des arrêtés de caisse et documents d'exploitation journaliers
         </Typography>
       </Box>
 
-      {/* ── Filtres date ── */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center', py: '12px !important' }}>
-          <TextField
-            label="Du" type="date" size="small"
-            value={dateDebut}
-            onChange={(e) => setDateDebut(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: 180 }}
-          />
-          <TextField
-            label="Au" type="date" size="small"
-            value={dateFin}
-            onChange={(e) => setDateFin(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: 180 }}
-          />
-          {(dateDebut || dateFin) && (
-            <Typography
-              variant="body2"
-              sx={{ color: '#0D47A1', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => { setDateDebut(''); setDateFin('') }}
-            >
-              Réinitialiser
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
-
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
-          <CircularProgress />
-        </Box>
-      ) : stats && (
-        <>
-          {/* ── Cartes chiffres clés ── */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard
-                icon={<ReceiptOutlined />}
-                label="Total dossiers"
-                value={stats.total}
-                color="#0D47A1"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard
-                icon={<HourglassEmptyOutlined />}
-                label="En attente"
-                value={stats.en_attente}
-                color="#f59e0b"
-                sub={`${stats.total ? Math.round((stats.en_attente / stats.total) * 100) : 0}% du total`}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard
-                icon={<CheckCircleOutlined />}
-                label="Validés"
-                value={stats.valides}
-                color="#16a34a"
-                sub={`${tauxValidation}% du total`}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <StatCard
-                icon={<CancelOutlined />}
-                label="Rejetés"
-                value={stats.rejetes}
-                color="#dc2626"
-                sub={`${tauxRejet}% du total`}
-              />
-            </Grid>
-          </Grid>
+      {/* ── Cartes de KPI Majeurs ── */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)', borderRadius: 3 }}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ p: 1.5, bgcolor: '#E3F2FD', borderRadius: 2, display: 'flex' }}>
+                <Inventory2Outlined sx={{ color: '#0D47A1', fontSize: 28 }} />
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Total Enveloppes Journalières</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{totalArchives}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)', borderRadius: 3 }}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ p: 1.5, bgcolor: '#E8F5E9', borderRadius: 2, display: 'flex' }}>
+                <CheckCircleOutlined sx={{ color: '#2E7D32', fontSize: 28 }} />
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Dossiers 100% Complets</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#2E7D32' }}>{completes}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-            {/* ── Par type de pièce ── */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-                    Par type de pièce
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  {stats.par_type_piece.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">Aucune donnée</Typography>
-                  ) : stats.par_type_piece.map((t, i) => (
-                    <Box key={i} sx={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between',
-                      py: 1.2,
-                      borderBottom: i < stats.par_type_piece.length - 1 ? '1px solid' : 'none',
-                      borderColor: 'divider',
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <BusinessOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        <Typography variant="body2">
-                          {TYPE_PIECE_LABELS[t.type_piece] ?? t.type_piece}
-                        </Typography>
-                      </Box>
-                      <Chip label={t.total} size="small" color="primary" variant="outlined" />
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
-            </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)', borderRadius: 3 }}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ p: 1.5, bgcolor: '#FFEBEE', borderRadius: 2, display: 'flex' }}>
+                <ErrorOutlined sx={{ color: '#C62828', fontSize: 28 }} />
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Dossiers Incomplets (Manquants)</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#C62828' }}>{incompletes}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-            {/* ── Par caissier ── */}
-            <Grid size={{ xs: 12, md: 8 }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Activité par caissier
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {stats.par_caissier.length} caissier{stats.par_caissier.length > 1 ? 's' : ''}
-                    </Typography>
-                  </Box>
-                  <Divider sx={{ mb: 2 }} />
-                  {stats.par_caissier.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">Aucune donnée</Typography>
-                  ) : stats.par_caissier.map((c, i) => {
-                    const pct = stats.total ? Math.round((c.total / stats.total) * 100) : 0
-                    return (
-                      <Box key={i} sx={{
-                        py: 1.5,
-                        borderBottom: i < stats.par_caissier.length - 1 ? '1px solid' : 'none',
-                        borderColor: 'divider',
-                      }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PersonOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {c.caissier__prenom} {c.caissier__nom}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              {pct}%
-                            </Typography>
-                            <Chip label={c.total} size="small" color="primary" variant="outlined" />
-                          </Box>
-                        </Box>
-                        {/* Barre de progression */}
-                        <Box sx={{
-                          height: 4, borderRadius: 2,
-                          bgcolor: '#e2e8f0', overflow: 'hidden',
-                        }}>
-                          <Box sx={{
-                            height: '100%', borderRadius: 2,
-                            width: `${pct}%`,
-                            bgcolor: '#0D47A1',
-                            transition: 'width 0.6s ease',
-                          }} />
-                        </Box>
-                      </Box>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-            </Grid>
+      {/* ── Répartitions Analytiques (Data issues des Annotations Django) ── */}
+      <Grid container spacing={3}>
+        {/* Par Produit */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+            <Box sx={{ p: 2, bgcolor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Inventory2Outlined sx={{ fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Par Produit</Typography>
+            </Box>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Service</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>Volume</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stats?.par_produit.map((item, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell sx={{ fontWeight: 500 }}>
+                      {LABELS_PRODUITS[item.produit__nom || ''] || item.produit__nom}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: '#0D47A1' }}>{item.total}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
 
-            {/* ── Docs incomplets ── */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{
-                border: stats.docs_incomplets > 0 ? '1px solid #fbbf24' : undefined,
-                bgcolor: stats.docs_incomplets > 0 ? '#fffbeb' : undefined,
-              }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                      width: 40, height: 40, borderRadius: 2,
-                      bgcolor: '#fbbf2420',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <HourglassEmptyOutlined sx={{ color: '#f59e0b' }} />
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary"
-                        sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Docs incomplets
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#f59e0b' }}>
-                        {stats.docs_incomplets}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Dossiers en attente sans tous leurs documents
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+        {/* Par Agence */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+            <Box sx={{ p: 2, bgcolor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BusinessOutlined sx={{ fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Par Agence</Typography>
+            </Box>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Agence</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>Volume</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stats?.par_agence.map((item, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.agence__code}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.agence__nom}</Typography>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: '#0D47A1' }}>{item.total}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
 
-          </Grid>
-        </>
-      )}
+        {/* Par Ville */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+            <Box sx={{ p: 2, bgcolor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <MapOutlined sx={{ fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Par Zone / Ville</Typography>
+            </Box>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Ville</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>Volume</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stats?.par_ville.map((item, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell sx={{ fontWeight: 500 }}>{item.agence__ville__nom || 'Non spécifiée'}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: '#0D47A1' }}>{item.total}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+      </Grid>
     </Box>
   )
 }

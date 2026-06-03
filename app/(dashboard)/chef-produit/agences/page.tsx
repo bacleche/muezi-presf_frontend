@@ -68,14 +68,7 @@ export default function AgencesPage() {
             Suivi des succursales financières et de leurs responsables attitrés
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddCircleOutlined />}
-          onClick={() => router.push('/admin/agences/nouveau')}
-          sx={{ bgcolor: '#0D47A1', '&:hover': { bgcolor: '#0a3578' } }}
-        >
-          Nouvelle agence
-        </Button>
+       
       </Box>
 
       {/* Recherche */}
