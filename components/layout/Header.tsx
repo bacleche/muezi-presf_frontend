@@ -102,13 +102,13 @@ const handleNotifClick = (n: Notification) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 
           {/* ── Cloche → menu notifications ── */}
-          <Tooltip title="Notifications">
+          {/* <Tooltip title="Notifications">
             <IconButton onClick={handleNotifOpen}>
               <Badge badgeContent={unread} color="error" invisible={unread === 0}>
                 <NotificationsOutlined />
               </Badge>
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
           <Menu
             anchorEl={notifAnchor}

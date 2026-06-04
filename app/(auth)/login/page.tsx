@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image';
 import {
   Box, Card, TextField, Button, Typography,
   CircularProgress, InputAdornment, IconButton, Fade, Alert
@@ -50,10 +51,10 @@ const handleSubmit = async (e: React.FormEvent) => {
   setLoading(true)
   
   try {
-    // ✅ CORRECT : On passe UN SEUL argument (l'objet complet "form") à l'API
+    //  CORRECT : On passe UN SEUL argument (l'objet complet "form") à l'API
     await authAPI.login(form)
     
-    // ✅ CORRECT : On passe UN SEUL argument (la string "form.email") au store Zustand
+    //  CORRECT : On passe UN SEUL argument (la string "form.email") au store Zustand
     setPendingEmail(form.email) 
     
     enqueueSnackbar('Code de vérification envoyé à votre adresse email.', { variant: 'info' })
@@ -113,11 +114,23 @@ const handleSubmit = async (e: React.FormEvent) => {
                   p: 1.2, borderRadius: 2, bgcolor: '#2563eb',
                   display: 'flex', boxShadow: '0 0 25px rgba(37,99,233,0.4)',
                 }}>
-                  <ShieldOutlined sx={{ fontSize: 24 }} />
+                  <ShieldOutlined sx={{ fontSize: 10}} />
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '0.5px', fontFamily: 'inherit' }}>
-                  PRESF <span style={{ color: '#3b82f6', fontWeight: 500 }}>ARCHIVIS</span>
-                </Typography>
+                <Image 
+                src="/LOGOPRESF.png" 
+                alt="Logo PRESF" 
+                width={80}  // Taille agrandie
+                height={80} // Taille agrandie
+                style={{ 
+                  borderRadius: '50%',      // Rend l'image parfaitement ronde
+                  backgroundColor: '#FFFFFF', // Force un fond blanc au cas où
+                  objectFit: 'cover',       // Ajuste l'image pour qu'elle remplisse bien le cercle
+                  border: '2px solid #f1f5f9' // Optionnel : une légère bordure pour le look
+                }} 
+              />
+              <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '0.5px' }}>
+                ArchiviS
+              </Typography>
               </Box>
               
               <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 2, letterSpacing: '-0.5px' }}>

@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image';
+
 import { usePathname, useRouter } from 'next/navigation'
 import {
   Drawer, List, ListItem, ListItemButton, ListItemIcon,
@@ -169,8 +171,22 @@ function DrawerContent({ onClose, onLogout }: { onClose?: () => void, onLogout: 
       <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ShieldOutlined sx={{ color: '#3b82f6', fontSize: 22 }} />
-            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>PRESF <span style={{ color: '#3b82f6' }}>ARCHIVIS</span></Typography>
+            <ShieldOutlined sx={{ color: '#3b82f6', fontSize: 10 }} />
+            <Image 
+                            src="/LOGOPRESF.png" 
+                            alt="Logo PRESF" 
+                            width={20}  // Taille agrandie
+                            height={20} // Taille agrandie
+                            style={{ 
+                              borderRadius: '50%',      // Rend l'image parfaitement ronde
+                              backgroundColor: '#FFFFFF', // Force un fond blanc au cas où
+                              objectFit: 'cover',       // Ajuste l'image pour qu'elle remplisse bien le cercle
+                              border: '2px solid #f1f5f9' // Optionnel : une légère bordure pour le look
+                            }} 
+                          />
+                          <Typography variant="h4" sx={{ fontSize: 20, fontWeight: 800, letterSpacing: '0.5px' }}>
+                            ArchiviS
+                          </Typography>
           </Box>
         </Box>
         {onClose && <IconButton onClick={onClose} sx={{ color: 'white' }}><CloseOutlined /></IconButton>}
