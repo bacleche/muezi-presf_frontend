@@ -12,16 +12,16 @@ import {
   BadgeOutlined, PersonOutlined, DescriptionOutlined,
   VerifiedOutlined, DownloadOutlined, WarningAmberOutlined
 } from '@mui/icons-material'
-import { enregistrementAPI } from '@/lib/api'
+import { transactionAPI } from '@/lib/api'
 import StatutBadge from '@/components/enregistrements/StatutBadge'
 
 // ── Types ──────────────────────────────────────────
 interface Document {
-  id:              number
-  type_doc:        string
+  id:               number
+  type_doc:         string
   type_doc_display: string
-  fichier:         string
-  uploaded_at:     string
+  fichier:          string
+  uploaded_at:      string
 }
 
 interface Enregistrement {
@@ -44,27 +44,6 @@ interface Enregistrement {
   updated_at:          string
 }
 
-// ── Composant info row ─────────────────────────────
-// const InfoRow = ({
-//   icon, label, value
-// }: {
-//   icon: React.ReactNode
-//   label: string
-//   value: React.ReactNode
-// }) => (
-//   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1.5 }}>
-//     <Box sx={{ color: 'primary.main', mt: 0.3, flexShrink: 0 }}>{icon}</Box>
-//     <Box sx={{ flexGrow: 1 }}>
-//       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-//         {label}
-//       </Typography>
-//       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-//         {value}
-//       </Typography>
-//     </Box>
-//   </Box>
-// )
-
 const InfoRow = ({ icon, label, value, valueColor }: {
   icon:        React.ReactNode
   label:       string
@@ -78,7 +57,7 @@ const InfoRow = ({ icon, label, value, valueColor }: {
         {label}
       </Typography>
       <Typography
-        component="div"     
+        component="div"
         variant="body2"
         sx={{ fontWeight: 600, color: valueColor || 'text.primary' }}
       >
@@ -93,22 +72,19 @@ export default function ConformiteDetailPage() {
   const params = useParams()
   const id     = Number(params.id)
 
-  const [enreg, setEnreg]       = useState<Enregistrement | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
+  const [enreg, setEnreg]           = useState<Enregistrement | null>(null)
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Dialog rejet
-  const [dialogRejet, setDialogRejet]   = useState(false)
-  const [motifRejet, setMotifRejet]     = useState('')
-
-  // Dialog validation
+  const [dialogRejet, setDialogRejet]     = useState(false)
+  const [motifRejet, setMotifRejet]       = useState('')
   const [dialogValider, setDialogValider] = useState(false)
 
   const charger = async () => {
     setLoading(true)
     try {
-      const { data } = await enregistrementAPI.detail(id)
+      const { data } = await transactionAPI.detail(id)
       setEnreg(data)
     } catch {
       setError('Enregistrement introuvable.')
@@ -119,11 +95,10 @@ export default function ConformiteDetailPage() {
 
   useEffect(() => { charger() }, [id])
 
-  // ── Valider ───────────────────────────────────────
   const handleValider = async () => {
     setSubmitting(true)
     try {
-      await enregistrementAPI.valider(id, { statut: 'valide' })
+      await transactionAPI.valider(id, { statut: 'valide' })
       setDialogValider(false)
       await charger()
     } catch (err: unknown) {
@@ -134,7 +109,6 @@ export default function ConformiteDetailPage() {
     }
   }
 
-  // ── Rejeter ───────────────────────────────────────
   const handleRejeter = async () => {
     if (!motifRejet.trim()) {
       setError('Le motif de rejet est obligatoire.')
@@ -142,7 +116,7 @@ export default function ConformiteDetailPage() {
     }
     setSubmitting(true)
     try {
-      await enregistrementAPI.valider(id, { statut: 'rejete', motif_rejet: motifRejet })
+      await transactionAPI.valider(id, { statut: 'rejete', motif_rejet: motifRejet })
       setDialogRejet(false)
       setMotifRejet('')
       await charger()
@@ -190,7 +164,6 @@ export default function ConformiteDetailPage() {
           <StatutBadge statut={enreg.statut} />
         </Box>
 
-        {/* Boutons action — seulement si en_attente */}
         {enreg.statut === 'en_attente' && (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
@@ -212,16 +185,18 @@ export default function ConformiteDetailPage() {
         )}
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Alerte docs incomplets */}
       {!enreg.documents_complets && enreg.statut === 'en_attente' && (
         <Alert severity="warning" sx={{ mb: 3 }} icon={<WarningAmberOutlined />}>
           Documents incomplets — la validation est impossible tant que les 3 documents ne sont pas uploadés.
         </Alert>
       )}
 
-      {/* Alerte motif rejet */}
       {enreg.statut === 'rejete' && enreg.motif_rejet && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="body2" sx={{ fontWeight: 700 }}>Motif de rejet :</Typography>
@@ -235,12 +210,8 @@ export default function ConformiteDetailPage() {
         <Grid size={{ xs: 12, md: 5 }}>
           <Card>
             <CardContent>
-              {/* Avatar client */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                <Avatar sx={{
-                  width: 56, height: 56, fontSize: 22,
-                  bgcolor: 'primary.main',
-                }}>
+                <Avatar sx={{ width: 56, height: 56, fontSize: 22, bgcolor: 'primary.main' }}>
                   {enreg.prenom_client[0]}{enreg.nom_client[0]}
                 </Avatar>
                 <Box>
@@ -255,37 +226,16 @@ export default function ConformiteDetailPage() {
 
               <Divider sx={{ mb: 2 }} />
 
-              <InfoRow
-                icon={<BadgeOutlined fontSize="small" />}
-                label="Type de pièce"
-                value={enreg.type_piece_display}
-              />
+              <InfoRow icon={<BadgeOutlined fontSize="small" />}  label="Type de pièce"    value={enreg.type_piece_display} />
               <Divider />
-              <InfoRow
-                icon={<BadgeOutlined fontSize="small" />}
-                label="Numéro de pièce"
-                value={enreg.numero_piece}
-              />
+              <InfoRow icon={<BadgeOutlined fontSize="small" />}  label="Numéro de pièce"  value={enreg.numero_piece} />
               <Divider />
-              <InfoRow
-                icon={<PersonOutlined fontSize="small" />}
-                label="Caissier"
-                value={enreg.caissier_nom}
-              />
+              <InfoRow icon={<PersonOutlined fontSize="small" />} label="Caissier"          value={enreg.caissier_nom} />
               <Divider />
-              <InfoRow
-                icon={<PersonOutlined fontSize="small" />}
-                label="Date de paiement"
-                value={new Date(enreg.date_paiement).toLocaleDateString('fr-FR')}
-              />
+              <InfoRow icon={<PersonOutlined fontSize="small" />} label="Date de paiement"  value={new Date(enreg.date_paiement).toLocaleDateString('fr-FR')} />
               <Divider />
-              <InfoRow
-                icon={<PersonOutlined fontSize="small" />}
-                label="Créé le"
-                value={new Date(enreg.created_at).toLocaleString('fr-FR')}
-              />
+              <InfoRow icon={<PersonOutlined fontSize="small" />} label="Créé le"           value={new Date(enreg.created_at).toLocaleString('fr-FR')} />
 
-              {/* Vérifié par */}
               {enreg.verifie_par_nom && (
                 <>
                   <Divider />
@@ -295,7 +245,6 @@ export default function ConformiteDetailPage() {
                     value={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {enreg.verifie_par_nom}
-
                         {enreg.verifie_le && (
                           <Typography variant="caption" color="text.secondary">
                             {enreg.verifie_le}
@@ -315,9 +264,7 @@ export default function ConformiteDetailPage() {
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Documents
-                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Documents</Typography>
                 <Chip
                   label={enreg.documents_complets ? '✅ Complets' : '⚠️ Incomplets'}
                   color={enreg.documents_complets ? 'success' : 'warning'}
@@ -355,8 +302,7 @@ export default function ConformiteDetailPage() {
                             </Box>
                           </Box>
                           <Button
-                            size="small"
-                            variant="outlined"
+                            size="small" variant="outlined"
                             startIcon={<DownloadOutlined />}
                             href={doc.fichier}
                             target="_blank"
@@ -371,7 +317,6 @@ export default function ConformiteDetailPage() {
                 </Box>
               )}
 
-              {/* Docs manquants */}
               {!enreg.documents_complets && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="caption" color="text.secondary">
@@ -394,9 +339,7 @@ export default function ConformiteDetailPage() {
 
       {/* ── Dialog Validation ── */}
       <Dialog open={dialogValider} onClose={() => setDialogValider(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Confirmer la validation
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirmer la validation</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
             <CheckCircleOutlined color="success" sx={{ fontSize: 40 }} />
@@ -411,9 +354,7 @@ export default function ConformiteDetailPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button variant="outlined" onClick={() => setDialogValider(false)}>
-            Annuler
-          </Button>
+          <Button variant="outlined" onClick={() => setDialogValider(false)}>Annuler</Button>
           <Button
             variant="contained" color="success"
             onClick={handleValider}
@@ -427,9 +368,7 @@ export default function ConformiteDetailPage() {
 
       {/* ── Dialog Rejet ── */}
       <Dialog open={dialogRejet} onClose={() => setDialogRejet(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
-          Rejeter le dossier
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>Rejeter le dossier</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Veuillez indiquer le motif du rejet. Le caissier pourra corriger et resoumettre le dossier.

@@ -13,7 +13,7 @@ import {
   FolderZipOutlined, CheckCircleOutlined,
   CancelOutlined, HourglassEmptyOutlined
 } from '@mui/icons-material'
-import { enregistrementAPI, agenceAPI } from '@/lib/api'
+import { transactionAPI, agenceAPI } from '@/lib/api'
 
 interface Document {
   id:               number
@@ -57,8 +57,6 @@ export default function ArchivesPage() {
   const [dateFin,   setDateFin]   = useState('')
   const [agences, setAgences]     = useState<{ id: number; nom: string }[]>([])
   const [agenceId, setAgenceId]   = useState('')
-
-  // Téléchargements en cours
   const [downloading, setDownloading] = useState<Record<number, boolean>>({})
 
   const charger = useCallback(async (
@@ -71,12 +69,12 @@ export default function ArchivesPage() {
       const params: Record<string, string | number> = {
         search: q, page: p + 1, page_size: 15,
       }
-      if (s !== 'tous') params.statut    = s
+      if (s !== 'tous') params.statut     = s
       if (dd)           params.date_debut = dd
       if (df)           params.date_fin   = df
       if (ag)           params.agence_id  = ag
 
-      const { data } = await enregistrementAPI.liste(params)
+      const { data } = await transactionAPI.liste(params)
       setEnregistrements(data.results ?? data)
       setTotal(data.count ?? (data.results ?? data).length)
     } catch {
@@ -113,7 +111,7 @@ export default function ArchivesPage() {
   const telechargerZip = async (enreg: Enregistrement) => {
     setDownloading((prev) => ({ ...prev, [enreg.id]: true }))
     try {
-      const { data } = await enregistrementAPI.telechargerZip(enreg.id)
+      const { data } = await transactionAPI.telechargerZip(enreg.id)
       const url  = URL.createObjectURL(new Blob([data], { type: 'application/zip' }))
       const link = document.createElement('a')
       link.href     = url
@@ -233,46 +231,31 @@ export default function ArchivesPage() {
             ) : enregistrements.map((e) => (
               <TableRow key={e.id} hover>
 
-                {/* Client */}
                 <TableCell>
                   <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
                     {e.prenom_client} {e.nom_client}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    #{e.id}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">#{e.id}</Typography>
                 </TableCell>
 
-                {/* Pièce */}
                 <TableCell>
-                  <Typography sx={{ fontWeight: 600, fontSize: 13 }}>
-                    {e.type_piece_display}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {e.numero_piece}
-                  </Typography>
+                  <Typography sx={{ fontWeight: 600, fontSize: 13 }}>{e.type_piece_display}</Typography>
+                  <Typography variant="caption" color="text.secondary">{e.numero_piece}</Typography>
                 </TableCell>
 
-                {/* Caissier / Agence */}
                 <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {e.caissier_nom}
-                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{e.caissier_nom}</Typography>
                   {e.agence_nom && (
-                    <Typography variant="caption" color="text.secondary">
-                      {e.agence_nom}
-                    </Typography>
+                    <Typography variant="caption" color="text.secondary">{e.agence_nom}</Typography>
                   )}
                 </TableCell>
 
-                {/* Date paiement */}
                 <TableCell>
                   <Typography variant="body2">
                     {new Date(e.date_paiement).toLocaleDateString('fr-FR')}
                   </Typography>
                 </TableCell>
 
-                {/* Statut */}
                 <TableCell>
                   <Chip
                     label={STATUT_CONFIG[e.statut].label}
@@ -282,7 +265,6 @@ export default function ArchivesPage() {
                   />
                 </TableCell>
 
-                {/* Documents individuels */}
                 <TableCell>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {e.documents.length === 0 ? (
@@ -290,12 +272,10 @@ export default function ArchivesPage() {
                     ) : e.documents.map((doc) => (
                       <Button
                         key={doc.id}
-                        size="small"
-                        variant="text"
+                        size="small" variant="text"
                         startIcon={<DownloadOutlined sx={{ fontSize: 14 }} />}
                         href={doc.fichier}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        target="_blank" rel="noopener noreferrer"
                         sx={{ fontSize: 11, px: 0.5, justifyContent: 'flex-start' }}
                       >
                         {doc.type_doc_display}
@@ -304,7 +284,6 @@ export default function ArchivesPage() {
                   </Box>
                 </TableCell>
 
-                {/* Télécharger ZIP */}
                 <TableCell>
                   <Tooltip title={
                     e.documents.length === 0
@@ -313,9 +292,7 @@ export default function ArchivesPage() {
                   }>
                     <span>
                       <Button
-                        size="small"
-                        variant="contained"
-                        color="primary"
+                        size="small" variant="contained" color="primary"
                         startIcon={
                           downloading[e.id]
                             ? <CircularProgress size={14} color="inherit" />

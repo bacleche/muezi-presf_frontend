@@ -1,0 +1,763 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import {
+    Box, Typography, Card, CardContent, Button,
+    Grid, TextField, Alert, CircularProgress,
+    Chip, Dialog, DialogTitle, DialogContent, DialogActions,
+    FormControl, InputLabel, Select, MenuItem,
+    LinearProgress, Collapse, Tooltip, IconButton
+
+} from '@mui/material'
+
+
+import {
+  AccountBalanceOutlined,
+  AddOutlined,
+  ExpandMoreOutlined,
+  ExpandLessOutlined,
+  DownloadOutlined,
+  UploadFileOutlined,
+  CheckCircleOutlined,
+  RadioButtonUncheckedOutlined,
+  CloseOutlined,
+  FolderOffOutlined,
+} from '@mui/icons-material'
+import { archiveAgenceAPI, agenceAPI, produitAPI } from '@/lib/api'
+
+// ─── Types ────────────────────────────────────────────────────
+
+interface Agence {
+  id: number
+  nom: string
+  code: string
+}
+
+interface Produit {
+  id: number
+  nom: string
+  nom_display: string
+  is_active: boolean
+}
+
+interface DocumentArchive {
+  id: number
+  type_doc: string
+  type_doc_display: string
+  fichier: string
+  uploade_par: number
+  uploaded_at: string
+}
+
+interface Archive {
+  id: number
+  agence: number
+  agence_nom: string
+  agence_code: string
+  produit: number
+  produit_nom: string
+  date: string
+  archive_par: number
+  archive_par_nom: string
+  documents: DocumentArchive[]
+  documents_complets: boolean
+  types_requis: { value: string; label: string }[]
+  created_at: string
+  updated_at: string
+}
+
+// ─── Couleurs par produit ──────────────────────────────────────
+
+const PRODUIT_COLORS: Record<string, { bg: string; color: string }> = {
+  western_union: { bg: '#E6F1FB', color: '#0C447C' },
+  change:        { bg: '#EAF3DE', color: '#27500A' },
+  visa:          { bg: '#EEEDFE', color: '#3C3489' },
+  momo:          { bg: '#FAEEDA', color: '#633806' },
+  airtel_money:  { bg: '#FAECE7', color: '#712B13' },
+}
+
+function getProduitStyle(nom: string) {
+  return PRODUIT_COLORS[nom] ?? { bg: '#F1EFE8', color: '#444441' }
+}
+
+// ─── Statut archive ────────────────────────────────────────────
+
+function getStatut(archive: Archive): { label: string; color: 'success' | 'warning' | 'error' } {
+  const total  = archive.types_requis.length
+  const done   = archive.documents.length
+  if (done === 0)     return { label: 'Vide',    color: 'error'   }
+  if (done >= total)  return { label: 'Complet', color: 'success' }
+  return { label: `${done}/${total}`, color: 'warning' }
+}
+
+// ─── Carte d'un document ───────────────────────────────────────
+
+function DocSlot({
+  typeDoc,
+  label,
+  document,
+  onUpload,
+  uploading,
+}: {
+  typeDoc:   string
+  label:     string
+  document?: DocumentArchive
+  onUpload:  (typeDoc: string, file: File) => void
+  uploading: boolean
+}) {
+  const done = !!document
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onUpload(typeDoc, file)
+    e.target.value = ''
+  }
+
+  return (
+    <Box
+      sx={{
+        border: done
+          ? '1px solid'
+          : '1px dashed',
+        borderColor: done ? 'success.light' : 'divider',
+        borderRadius: 2,
+        p: 1.5,
+        bgcolor: done ? 'success.50' : 'background.default',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+      }}
+    >
+      <Typography
+        sx={{ fontSize: 13, fontWeight: 500 }}
+        color={done ? 'success.dark' : 'text.primary'}
+      >
+        {label}
+      </Typography>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {done ? (
+          <CheckCircleOutlined sx={{ fontSize: 14, color: 'success.main' }} />
+        ) : (
+          <RadioButtonUncheckedOutlined sx={{ fontSize: 14, color: 'text.disabled' }} />
+        )}
+        <Typography  sx={{ fontSize: 11}} color={done ? 'success.main' : 'text.secondary'}>
+          {done ? 'Uploadé' : 'Manquant'}
+        </Typography>
+      </Box>
+
+      {done && document ? (
+        <Tooltip title="Télécharger ce document">
+          <Typography
+            component="a"
+            href={document.fichier}
+            target="_blank"
+            color="primary"
+            sx={{ fontSize: 11 ,textDecoration: 'underline', cursor: 'pointer' }}
+          >
+            Voir le fichier
+          </Typography>
+        </Tooltip>
+      ) : (
+        <label>
+          <input
+            type="file"
+            hidden
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={handleChange}
+            disabled={uploading}
+          />
+          <Button
+            component="span"
+            size="small"
+            variant="outlined"
+            disabled={uploading}
+            startIcon={
+              uploading
+                ? <CircularProgress size={10} />
+                : <UploadFileOutlined sx={{ fontSize: 14 }} />
+            }
+            sx={{ fontSize: 11, py: 0.25, px: 1 }}
+          >
+            Uploader
+          </Button>
+        </label>
+      )}
+    </Box>
+  )
+}
+
+// ─── Carte archive ─────────────────────────────────────────────
+
+function ArchiveCard({
+  archive,
+  onUpload,
+  onDownloadZip,
+}: {
+  archive:        Archive
+  onUpload:       (archiveId: number, typeDoc: string, file: File) => void
+  onDownloadZip:  (archive: Archive) => void
+}) {
+  const [open, setOpen]           = useState(false)
+  const [uploading, setUploading] = useState<string | null>(null)
+
+  const statut = getStatut(archive)
+  const style  = getProduitStyle(archive.produit_nom)
+
+  const handleUpload = async (typeDoc: string, file: File) => {
+    setUploading(typeDoc)
+    await onUpload(archive.id, typeDoc, file)
+    setUploading(null)
+  }
+
+  const total    = archive.types_requis.length
+  const done     = archive.documents.length
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0
+
+  return (
+    <Card variant="outlined" sx={{ borderRadius: 2, mb: 1 }}>
+      {/* En-tête cliquable */}
+      <Box
+        onClick={() => setOpen(!open)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: '10px 16px',
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'action.hover' },
+          gap: 1,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box  sx={{ display: 'flex', alignItems: 'center', gap: 1.5  , flex: 1, minWidth: 0 }}>
+          {/* Badge produit */}
+          <Chip
+            label={archive.produit_nom}
+            size="small"
+            sx={{
+              bgcolor: style.bg,
+              color:   style.color,
+              fontWeight: 500,
+              fontSize: 12,
+              height: 24,
+            }}
+          />
+          <Box>
+            <Typography sx={{ fontSize: 13, fontWeight: 500 }}>
+              {archive.agence_nom}
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              {new Date(archive.date).toLocaleDateString('fr-FR')}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip
+            label={statut.label}
+            color={statut.color}
+            size="small"
+            sx={{ fontSize: 11, height: 22 }}
+          />
+          <Tooltip title="Télécharger ZIP">
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); onDownloadZip(archive) }}
+            >
+              <DownloadOutlined sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          {open ? (
+            <ExpandLessOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
+          ) : (
+            <ExpandMoreOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
+          )}
+        </Box>
+      </Box>
+
+      {/* Barre de progression */}
+      {!archive.documents_complets && (
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          color={statut.color === 'error' ? 'error' : 'warning'}
+          sx={{ height: 2 }}
+        />
+      )}
+
+      {/* Détail des documents */}
+      <Collapse in={open} unmountOnExit>
+        <CardContent sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 1.5 }}>
+          <Typography
+          sx={{ fontSize: 11, color: 'text.secondary', mb: 1, fontWeight: 500 , letterSpacing: '0.05em' }}
+          
+          >
+            Documents requis
+          </Typography>
+          <Grid container spacing={1}>
+            {archive.types_requis.map(({ value, label }) => {
+              const doc = archive.documents.find(d => d.type_doc === value)
+              return (
+                <Grid  size={{ xs: 12, sm: 6, md: 4 }} key={value}>
+                  <DocSlot
+                    typeDoc={value}
+                    label={label}
+                    document={doc}
+                    onUpload={handleUpload}
+                    uploading={uploading === value}
+                  />
+                </Grid>
+              )
+            })}
+          </Grid>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1.5 }}>
+            <Button
+              size="small"
+              startIcon={<DownloadOutlined />}
+              onClick={() => onDownloadZip(archive)}
+            >
+              Télécharger ZIP
+            </Button>
+          </Box>
+        </CardContent>
+      </Collapse>
+    </Card>
+  )
+}
+
+// ─── Modal nouvelle archive ────────────────────────────────────
+
+function NouvelleArchiveModal({
+  open,
+  agences,
+  produits,
+  onClose,
+  onCreate,
+}: {
+  open:     boolean
+  agences:  Agence[]
+  produits: Produit[]
+  onClose:  () => void
+  onCreate: (data: { agence: number; produit: number; date: string }) => Promise<void>
+}) {
+  const [agenceId,  setAgenceId]  = useState<number | ''>('')
+  const [produitId, setProduitId] = useState<number | ''>('')
+  const [date,      setDate]      = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
+
+  const produitNom = produits.find(p => p.id === produitId)?.nom ?? ''
+
+  const TYPES_PREVIEW: Record<string, string[]> = {
+    western_union: ['Réconciliation','API','Arrêté de caisse (matin)','Arrêté de caisse (soir)','Journal de transaction'],
+    change:        ['Mouvement de caisse','Arrêté de caisse (matin)','Arrêté de caisse (soir)','Journal de transaction'],
+    visa:          ['Arrêté (matin)','Arrêté (soir)','Fiche de souscription','Fiche de réclamation'],
+    momo:          ['Arrêté de caisse (matin)','Arrêté de caisse (soir)'],
+    airtel_money:  ['Arrêté (matin)','Arrêté (soir)'],
+  }
+
+  const handleSubmit = async () => {
+    console.log({ agenceId, produitId, date }) // ← ajouter
+  if (!agenceId || !produitId || !date) {
+    setError('Veuillez remplir tous les champs.')
+    return
+  }
+    setLoading(true)
+    setError('')
+    try {
+      await onCreate({ agence: agenceId as number, produit: produitId as number, date })
+      setAgenceId(''); setProduitId(''); setDate('')
+      onClose()
+    } catch {
+      setError('Erreur lors de la création. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Nouvelle archive</Typography>
+        <IconButton size="small" onClick={onClose}><CloseOutlined /></IconButton>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+        {error && <Alert severity="error">{error}</Alert>}
+
+        <FormControl fullWidth size="small">
+          <InputLabel>Agence</InputLabel>
+          <Select
+            value={agenceId}
+            label="Agence"
+            onChange={e => setAgenceId(e.target.value as number)}
+          >
+            {agences.map(a => (
+              <MenuItem key={a.id} value={a.id}>{a.nom} ({a.code})</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl fullWidth size="small">
+          <InputLabel>Produit</InputLabel>
+          <Select
+            value={produitId}
+            label="Produit"
+            onChange={e => setProduitId(e.target.value as number)}
+          >
+            {produits.filter(p => p.is_active).map(p => (
+              <MenuItem key={p.id} value={p.id}>{p.nom_display}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          label="Date"
+          type="date"
+          size="small"
+          fullWidth
+          slotProps={{ inputLabel: { shrink: true } }}
+          value={date}
+          onChange={e => setDate(e.target.value)}
+        />
+
+        {/* Aperçu des documents requis */}
+        {produitNom && TYPES_PREVIEW[produitNom] && (
+          <Box>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.75 }}>
+              Documents requis pour ce produit
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {TYPES_PREVIEW[produitNom].map(label => (
+                <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <RadioButtonUncheckedOutlined sx={{ fontSize: 14, color: 'text.disabled' }} />
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>Annuler</Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={14} color="inherit" /> : undefined}
+        >
+          Créer l'archive
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+// ─── Page principale ───────────────────────────────────────────
+
+export default function MouvementsAgencesPage() {
+  const [archives,     setArchives]     = useState<Archive[]>([])
+  const [agences,      setAgences]      = useState<Agence[]>([])
+  const [produits,     setProduits]     = useState<Produit[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState('')
+  const [modalOpen,    setModalOpen]    = useState(false)
+
+  // Filtres
+  const [filtreAgence,  setFiltreAgence]  = useState('')
+  const [filtreProduit, setFiltreProduit] = useState('')
+  const [filtreStatut,  setFiltreStatut]  = useState('')
+  const [filtreDebut,   setFiltreDebut]   = useState('')
+  const [filtreFin,     setFiltreFin]     = useState('')
+
+  // ── Chargement initial ─────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [archRes, agRes, prRes] = await Promise.all([
+          archiveAgenceAPI.liste(),
+          agenceAPI.liste(),
+          produitAPI.liste(),
+        ])
+        setArchives(archRes.data.results ?? archRes.data)
+        setAgences(agRes.data.results   ?? agRes.data)
+        setProduits(prRes.data.results  ?? prRes.data)
+      } catch {
+        setError('Impossible de charger les données.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  // ── Filtrage local ─────────────────────────────────────────
+  const archivesFiltrees = archives.filter(a => {
+    if (filtreAgence  && String(a.agence)  !== filtreAgence)  return false
+    if (filtreProduit && String(a.produit) !== filtreProduit) return false
+    if (filtreDebut   && a.date < filtreDebut)                return false
+    if (filtreFin     && a.date > filtreFin)                  return false
+    if (filtreStatut) {
+      const st = getStatut(a)
+      if (filtreStatut === 'complet' && st.color !== 'success') return false
+      if (filtreStatut === 'partiel' && st.color !== 'warning') return false
+      if (filtreStatut === 'vide'    && st.color !== 'error')   return false
+    }
+    return true
+  })
+
+  // ── Créer une archive ──────────────────────────────────────
+  const handleCreate = async (data: { agence: number; produit: number; date: string }) => {
+    const res = await archiveAgenceAPI.creer(data)
+    setArchives(prev => [res.data, ...prev])
+  }
+
+  // ── Uploader un document ───────────────────────────────────
+// const handleUpload = async (archiveId: number, typeDoc: string, file: File) => {
+//   const formData = new FormData()
+//   formData.append('type_doc', typeDoc)
+//   formData.append('fichier',  file)
+
+//   const userRaw = localStorage.getItem('user')
+//   const userId  = userRaw ? JSON.parse(userRaw).id : null
+//   if (userId) formData.append('uploade_par', String(userId))
+
+//   try {
+//     const res = await archiveAgenceAPI.uploadDoc(archiveId, formData)
+//     setArchives(prev =>
+//       prev.map(a =>
+//         a.id === archiveId
+//           ? {
+//               ...a,
+//               documents: [...a.documents, res.data],
+//               documents_complets:
+//                 a.documents.length + 1 >= a.types_requis.length,
+//             }
+//           : a
+//       )
+//     )
+//   } catch (err: any) {
+//     console.error('Upload échoué', err.response?.data)
+//     console.log('user raw:', localStorage.getItem('user'))
+//     console.log('access_token raw:', localStorage.getItem('access_token'))
+//   }
+// }
+
+const handleUpload = async (archiveId: number, typeDoc: string, file: File) => {
+  const formData = new FormData()
+  formData.append('type_doc', typeDoc)
+  formData.append('fichier',  file)
+
+  // Décoder le JWT pour extraire user_id
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    formData.append('uploade_par', String(payload.user_id))
+  }
+
+  try {
+    const res = await archiveAgenceAPI.uploadDoc(archiveId, formData)
+    setArchives(prev =>
+      prev.map(a =>
+        a.id === archiveId
+          ? {
+              ...a,
+              documents: [...a.documents, res.data],
+              documents_complets:
+                a.documents.length + 1 >= a.types_requis.length,
+            }
+          : a
+      )
+    )
+  } catch (err: any) {
+    console.error('Upload échoué', err.response?.data)
+  }
+}
+  // ── Télécharger ZIP ────────────────────────────────────────
+  const handleDownloadZip = async (archive: Archive) => {
+  try {
+    const res  = await archiveAgenceAPI.telechargerZip(archive.id)
+    const url  = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href  = url
+    const fileName = `${archive.produit_nom}_${archive.date}.zip`
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    console.error('Échec du téléchargement ZIP')
+  }
+}
+
+  // ── Créer l'endpoint uploadDoc si absent (à ajouter dans api.ts) ──
+  // archiveAgenceAPI.uploadDoc = (id, data) =>
+  //   api.post(`/archives/${id}/documents/`, data, {
+  //     headers: { 'Content-Type': 'multipart/form-data' }
+  //   })
+
+  // ── Render ─────────────────────────────────────────────────
+  return (
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+
+      {/* En-tête */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2.5,
+          flexWrap: 'wrap',
+          gap: 1.5
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccountBalanceOutlined sx={{ color: '#185FA5', fontSize: 26 }} />
+          <Typography  sx={{ fontSize: 20, fontWeight: 500 }}>
+            Mouvements agences
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddOutlined />}
+          onClick={() => setModalOpen(true)}
+        >
+          Nouvelle archive
+        </Button>
+      </Box>
+
+      {/* Filtres */}
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 2.5 }}>
+        <CardContent sx={{ pb: '12px !important' }}>
+          <Grid container spacing={1.5}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }} >
+              <FormControl fullWidth size="small">
+                <InputLabel>Agence</InputLabel>
+                <Select
+                  value={filtreAgence}
+                  label="Agence"
+                  onChange={e => setFiltreAgence(e.target.value)}
+                >
+                  <MenuItem value="">Toutes</MenuItem>
+                  {agences.map(a => (
+                    <MenuItem key={a.id} value={String(a.id)}>{a.nom}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Produit</InputLabel>
+                <Select
+                  value={filtreProduit}
+                  label="Produit"
+                  onChange={e => setFiltreProduit(e.target.value)}
+                >
+                  <MenuItem value="">Tous</MenuItem>
+                  {produits.map(p => (
+                    <MenuItem key={p.id} value={String(p.id)}>{p.nom_display}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+              <TextField
+                label="Du"
+                type="date"
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                value={filtreDebut}
+                onChange={e => setFiltreDebut(e.target.value)}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+              <TextField
+                label="Au"
+                type="date"
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                value={filtreFin}
+                onChange={e => setFiltreFin(e.target.value)}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 4, md: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Statut</InputLabel>
+                <Select
+                  value={filtreStatut}
+                  label="Statut"
+                  onChange={e => setFiltreStatut(e.target.value)}
+                >
+                  <MenuItem value="">Tous</MenuItem>
+                  <MenuItem value="complet">Complet</MenuItem>
+                  <MenuItem value="partiel">Partiel</MenuItem>
+                  <MenuItem value="vide">Vide</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 4, md: 1 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <Button
+                size="small"
+                onClick={() => {
+                  setFiltreAgence('')
+                  setFiltreProduit('')
+                  setFiltreStatut('')
+                  setFiltreDebut('')
+                  setFiltreFin('')
+                }}
+              >
+                Réinitialiser
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Compteur */}
+      <Typography sx={{ fontSize: 14, mb: 2, color: 'text.secondary' }}>
+        {archivesFiltrees.length} archive{archivesFiltrees.length !== 1 ? 's' : ''}
+      </Typography>
+
+      {/* Contenu */}
+      {loading && <LinearProgress />}
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {!loading && archivesFiltrees.length === 0 && (
+        <Box sx={{textAlign: 'center', py: 6, color: 'text.secondary'}}>
+          <FolderOffOutlined sx={{ fontSize: 40, mb: 1.5, opacity: 0.4 }} />
+          <Typography sx={{ fontSize: 14 }}>Aucune archive trouvée</Typography>
+        </Box>
+      )}
+
+      {archivesFiltrees.map(archive => (
+        <ArchiveCard
+        key={archive.id}
+        archive={archive}
+        onUpload={handleUpload}
+        onDownloadZip={handleDownloadZip}  // ← TypeScript va maintenant attendre Archive
+      />
+      ))}
+
+      {/* Modal création */}
+      <NouvelleArchiveModal
+        open={modalOpen}
+        agences={agences}
+        produits={produits}
+        onClose={() => setModalOpen(false)}
+        onCreate={handleCreate}
+      />
+    </Box>
+  )
+}
+

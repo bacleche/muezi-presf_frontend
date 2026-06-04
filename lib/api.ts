@@ -276,11 +276,26 @@ export const archiveAgenceAPI = {
   stats: () => api.get('/archives/stats/'),
   liste: (params?: object) => api.get('/archives/', { params }),
   telechargerZip: (id: number) => api.get(`/archives/${id}/zip/`, { responseType: 'blob' }),
+  uploadDoc: (id: number, formData: FormData) =>
+    api.post(`/archives/${id}/documents/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    creer: (data: { agence: number; produit: number; date: string }) =>  // ← ajouter
+    api.post('/archives/', data),
 }
 
 export const transactionAPI = {
   liste: (params?: object) => api.get('/transactions/', { params }),
   telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
+  stats: (params?: object) => api.get('/transactions/stats/', { params }),
+  exportCsv: (params?: object) => api.get('/transactions/export-csv/', { params, responseType: 'blob' }),
+   detail:  (id: number)              => api.get(`/transactions/${id}/`),
+  valider: (id: number, data: object) => api.post(`/transactions/${id}/valider/`, data),
+
+  creer:     (data: object)                 => api.post('/transactions/', data),
+  uploadDoc: (id: number, data: FormData)   => api.post(`/transactions/${id}/documents/`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 }
 
 export const produitAPI = {

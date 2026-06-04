@@ -124,7 +124,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 L&apos;intelligence au service de vos archives.
               </Typography>
               <Typography sx={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.6 }}>
-                Plateforme bancaire centralisée de gestion des flux et de conformité documentaire réglementaire.
+                Plateforme centralisée de gestion des flux et de conformité documentaire réglementaire.
               </Typography>
             </Box>
 

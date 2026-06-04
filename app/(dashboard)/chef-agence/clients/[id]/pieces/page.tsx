@@ -25,6 +25,7 @@ const TYPES_PIECES = [
 export default function PiecesClientPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { id: clientId } = use(params) // Déballage des params Next.js
+console.log("🔍 clientId actuel :", clientId)
   // Ajoutez cet état
   const [file, setFile] = useState<File | null>(null)
 
@@ -36,32 +37,23 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
 
   const [form, setForm] = useState({ type_piece: '', numero: '' })
   // 1. On liste tous les types de pièces potentiels
-    const TYPES_PIECES = [
-      { value: 'cni', label: "Carte Nationale d'Identité" },
-      { value: 'passport', label: 'Passeport' },
-      { value: 'permis', label: 'Permis de conduire' },
-      { value: 'niu', label: 'NIU (Numéro d\'Identification Unique)' },
-    ];
-
+   
     // 2. Le calcul du filtrage (se met à jour quand 'pieces' change)
     
 
-  const chargerPieces = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data } = await clientAPI.pieces(Number(clientId))
-      setPieces(data)
-    } catch (err) {
-      console.error(err)
-      setError('Erreur lors de la récupération des pièces d’identité.')
-    } finally {
-      setLoading(false)
-    }
-  }, [clientId])
-
   useEffect(() => {
-    chargerPieces()
-  }, [chargerPieces])
+  if (!clientId) return
+
+  setLoading(true)
+  setError('')
+  setPieces([])
+
+  clientAPI.pieces(Number(clientId))
+    .then(({ data }) => setPieces(data))
+    .catch(() => setError('Erreur lors de la récupération des pièces.'))
+    .finally(() => setLoading(false))
+
+}, [clientId])
 
   useEffect(() => {
   console.log("Pièces chargées depuis l'API :", pieces);
@@ -104,7 +96,8 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
   // Filtrer les types de pièces déjà possédés par le client pour éviter les erreurs Front
   const typesDisponibles = TYPES_PIECES.filter(
     (t) => !pieces.some((p) => p.type_piece === t.value)
-  )
+  );
+
 
   return (
     <Box sx={{ p: 1 }}>

@@ -16,7 +16,7 @@ import {
   VisibilityOutlined, TrendingUpOutlined,
   FilterListOutlined, RefreshOutlined
 } from '@mui/icons-material'
-import { enregistrementAPI } from '@/lib/api'
+import { transactionAPI } from '@/lib/api'
 import StatutBadge from '@/components/enregistrements/StatutBadge'
 
 // ── Types ──────────────────────────────────────────
@@ -24,9 +24,9 @@ interface Enregistrement {
   id:                  number
   nom_client:          string
   prenom_client:       string
-  type_piece:          string         // ✅
-  type_piece_display:  string         // ✅
-  numero_piece:        string         // ✅
+  type_piece:          string
+  type_piece_display:  string
+  numero_piece:        string
   date_paiement:       string
   statut:              'en_attente' | 'valide' | 'rejete'
   documents_complets:  boolean
@@ -45,7 +45,6 @@ interface Stats {
     total:            number
     type_piece_display?: number
     numero_piece?: number
-
   }[]
   par_type_piece: {
     type_piece: string
@@ -53,7 +52,6 @@ interface Stats {
   }[]
   docs_incomplets: number
 }
-
 
 type MuiColor = 'primary' | 'warning' | 'success' | 'error'
 
@@ -98,25 +96,25 @@ const StatCard = ({ icon, label, value, color, sub }: StatCardProps) => (
 export default function ConformiteDashboardPage() {
   const router = useRouter()
 
-  const [stats, setStats]               = useState<Stats | null>(null)
+  const [stats, setStats]                     = useState<Stats | null>(null)
   const [enregistrements, setEnregistrements] = useState<Enregistrement[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [exporting, setExporting]       = useState(false)
-  const [error, setError]               = useState('')
+  const [loading, setLoading]                 = useState(true)
+  const [exporting, setExporting]             = useState(false)
+  const [error, setError]                     = useState('')
 
   // Filtres
-  const [search, setSearch]         = useState('')
+  const [search, setSearch]           = useState('')
   const [filtreStatut, setFiltreStatut] = useState('')
-  const [dateDebut, setDateDebut]   = useState('')
-  const [dateFin, setDateFin]       = useState('')
+  const [dateDebut, setDateDebut]     = useState('')
+  const [dateFin, setDateFin]         = useState('')
 
   const charger = async () => {
     setLoading(true)
     setError('')
     try {
       const [statsRes, listeRes] = await Promise.all([
-        enregistrementAPI.stats({ date_debut: dateDebut, date_fin: dateFin }),
-        enregistrementAPI.liste({
+        transactionAPI.stats({ date_debut: dateDebut, date_fin: dateFin }),
+        transactionAPI.liste({
           search:     search,
           statut:     filtreStatut,
           date_debut: dateDebut,
@@ -137,7 +135,7 @@ export default function ConformiteDashboardPage() {
   const exporterCsv = async () => {
     setExporting(true)
     try {
-      const { data } = await enregistrementAPI.exportCsv({
+      const { data } = await transactionAPI.exportCsv({
         statut:     filtreStatut,
         date_debut: dateDebut,
         date_fin:   dateFin,
@@ -238,7 +236,7 @@ export default function ConformiteDashboardPage() {
           </Grid>
 
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* Montant total + taux */}
+            {/* Taux de traitement */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
@@ -248,32 +246,24 @@ export default function ConformiteDashboardPage() {
                       Taux de traitement
                     </Typography>
                   </Box>
-
                   <Divider sx={{ mb: 2 }} />
-
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Taux de validation
-                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Taux de validation</Typography>
                       <Chip
                         label={stats?.total ? `${Math.round((stats.valides / stats.total) * 100)} %` : '0 %'}
                         color="success" size="small"
                       />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Taux de rejet
-                      </Typography>
+                      <Typography variant="body2" color="text.secondary">Taux de rejet</Typography>
                       <Chip
                         label={stats?.total ? `${Math.round((stats.rejetes / stats.total) * 100)} %` : '0 %'}
                         color="error" size="small"
                       />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        En attente
-                      </Typography>
+                      <Typography variant="body2" color="text.secondary">En attente</Typography>
                       <Chip
                         label={stats?.total ? `${Math.round((stats.en_attente / stats.total) * 100)} %` : '0 %'}
                         color="warning" size="small"
@@ -346,10 +336,7 @@ export default function ConformiteDashboardPage() {
               </Box>
 
               {/* Filtres */}
-              <Box sx={{
-                display: 'flex', gap: 2, mb: 3,
-                flexWrap: 'wrap', alignItems: 'center',
-              }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
                 <TextField
                   placeholder="Rechercher client..."
                   value={search}
@@ -366,7 +353,6 @@ export default function ConformiteDashboardPage() {
                     },
                   }}
                 />
-
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Statut</InputLabel>
                   <Select
@@ -380,7 +366,6 @@ export default function ConformiteDashboardPage() {
                     <MenuItem value="rejete">Rejetés</MenuItem>
                   </Select>
                 </FormControl>
-
                 <TextField
                   label="Date début" type="date" size="small"
                   value={dateDebut}
@@ -393,7 +378,6 @@ export default function ConformiteDashboardPage() {
                   onChange={(e) => setDateFin(e.target.value)}
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
-
                 <Button
                   variant="contained" size="small"
                   startIcon={<FilterListOutlined />}
@@ -408,7 +392,7 @@ export default function ConformiteDashboardPage() {
                 <Table>
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                      {['Client', 'Caissier', 'Pièce d\'identité', 'Date', 'Docs', 'Statut', 'Action'].map((h) => (
+                      {['Client', 'Caissier', "Pièce d'identité", 'Date', 'Docs', 'Statut', 'Action'].map((h) => (
                         <TableCell key={h} sx={{ fontWeight: 700, color: '#475569' }}>{h}</TableCell>
                       ))}
                     </TableRow>
@@ -439,7 +423,6 @@ export default function ConformiteDashboardPage() {
                           <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'primary.main' }}>
                             {e.type_piece_display}
                           </Typography>
-
                           <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'primary.main' }}>
                             {e.numero_piece}
                           </Typography>
