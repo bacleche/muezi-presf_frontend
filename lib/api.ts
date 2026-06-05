@@ -1,131 +1,3 @@
-// import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
-
-// const api = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
-//   headers: { 'Content-Type': 'application/json' },
-// })
-
-// // ── Injecter le token JWT ──────────────────────
-// api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-//   if (typeof window !== 'undefined') {
-//     const token = localStorage.getItem('access_token')
-//     if (token) config.headers.Authorization = `Bearer ${token}`
-//   }
-//   return config
-// })
-
-// // ── Rafraîchir le token si expiré ─────────────
-// api.interceptors.response.use(
-//   (response: AxiosResponse) => response,
-//   async (error) => {
-//     const original = error.config
-//     if (error.response?.status === 401 && !original._retry) {
-//       original._retry = true
-//       try {
-//         const refresh = localStorage.getItem('refresh_token')
-//         // Aligné sur l'endpoint classique SimpleJWT ou ton routage d'authentification
-//         const { data } = await axios.post(
-//           `${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, 
-//           { refresh }
-//         )
-//         localStorage.setItem('access_token', data.access)
-//         original.headers.Authorization = `Bearer ${data.access}`
-//         return api(original)
-//       } catch {
-//         localStorage.clear()
-//         if (typeof window !== 'undefined') window.location.href = '/login'
-//       }
-//     }
-//     return Promise.reject(error)
-//   }
-// )
-
-// // ── Types réponses Authentification ─────────────
-// export interface LoginData {
-//   email:     string
-//   password:  string
-// }
-
-// export interface UserBackend {
-//   id:         number
-//   email:      string
-//   nom:        string
-//   prenom:     string
-//   role:       'superadmin' | 'conformite' | 'chef_produit' | 'admin_agence'
-//   pays:       number | null
-//   agence:     number | null
-//   is_active:  boolean
-// }
-
-// export interface VerifyOtpResponse {
-//   access:  string
-//   refresh: string
-//   user:    UserBackend
-// }
-
-// // ── Endpoints d'API ────────────────────────────
-
-// export interface LoginData {
-//   email:    string;
-//   password: string;
-// }
-
-// // Dans api.ts, modifie l'interface pour qu'elle utilise ton type global ou la structure exacte :
-// export const authAPI = {
-//   login: (data: LoginData) => 
-//     api.post('/auth/login/', data),
-
-//   // Utilise "any" temporairement ici dans la déclaration de la fonction pour l'assouplir
-//   verifyOtp: (data: { email: string; otp: string }) => 
-//     api.post<{ access: string; refresh: string; user: any }>('/auth/verify_otp/', data),
-// }
-
-// export const userAPI = {
-//   liste: (params?: object) =>
-//     api.get('/users/', { params }),
-
-//   creer: (data: object) =>
-//     api.post('/users/', data),
-
-//   modifier: (id: number, data: object) =>
-//     api.patch(`/users/${id}/`, data),
-
-//   toggle: (id: number) =>
-//     api.post(`/users/${id}/toggle_actif/`),
-
-//   me: () =>
-//     api.get('/users/me/'),
-
-//   changerMotDePasse: (id: number, data: { old_password: string; new_password: string }) =>
-//     api.post(`/users/${id}/change_password/`, data),
-// }
-
-// export const archiveAgenceAPI = {
-//   stats: () => api.get('/archives/stats/'),
-//   liste: (params?: object) => api.get('/archives/', { params }),
-//   telechargerZip: (id: number) => api.get(`/archives/${id}/zip/`, { responseType: 'blob' }),
-// }
-
-// export const transactionAPI = {
-//   liste: (params?: object) => api.get('/transactions/', { params }),
-//   telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
-// }
-
-// export const produitAPI = {
-//   liste: () => api.get('/produits/'),
-//   creer: (data: object) => api.post('/produits/', data),
-//   modifier: (id: number, data: object) => api.put(`/produits/${id}/`, data),
-//   supprimer: (id: number) => api.delete(`/produits/${id}/`),
-// }
-// export const agenceAPI = {
-//   liste: (params?: object) =>
-//     api.get('/agences/', { params }),
-
-//   detail: (id: number) =>
-//     api.get(`/agences/${id}/`),
-// }
-
-// export default api
 
 
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
@@ -282,6 +154,10 @@ export const archiveAgenceAPI = {
     }),
     creer: (data: { agence: number; produit: number; date: string }) =>  // ← ajouter
     api.post('/archives/', data),
+
+
+  exportZip: (params: { date_debut: string; date_fin: string }) =>
+    api.get('/archives/export-zip/', { params, responseType: 'blob' }),
 }
 
 export const transactionAPI = {
@@ -296,22 +172,29 @@ export const transactionAPI = {
   uploadDoc: (id: number, data: FormData)   => api.post(`/transactions/${id}/documents/`, data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+
+   exportZip: (params: { date_debut: string; date_fin: string }) =>
+    api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
 }
 
 export const produitAPI = {
   liste: () => api.get('/produits/'),
   creer: (data: object) => api.post('/produits/', data),
-  modifier: (id: number, data: object) => api.put(`/produits/${id}/`, data),
+  modifier: (id: number, data: object) => api.patch(`/produits/${id}/`, data),
   supprimer: (id: number) => api.delete(`/produits/${id}/`),
 }
 
 // ── NOUVEAU : Endpoints pour les Logs d'Audit ──
 export const auditAPI = {
-  liste: (params?: object) =>
-    api.get('/audit-logs/', { params }), // Ajuste l'URL selon ton routage Django backend (ex: /logs/ ou /audit/)
+  // liste: (params?: object) =>
+  //   api.get('/audit-logs/', { params }), // Ajuste l'URL selon ton routage Django backend (ex: /logs/ ou /audit/)
   
-  detail: (id: number) =>
-    api.get(`/audit-logs/${id}/`),
+  // detail: (id: number) =>
+  //   api.get(`/audit-logs/${id}/`),
+
+  liste: (params?: object) => api.get('/audit/', { params }),
+  detail: (id: number)     => api.get(`/audit/${id}/`),
+
 }
 
 // À vérifier/ajouter dans ton lib/api.ts
@@ -345,5 +228,7 @@ export const StatsAPI = {
    */
   stats: () => 
     api.get('/archives-agence/stats/'), // Assure-toi que le préfixe correspond à ton router DRF
+
+  statsAdmin: () => api.get('/archives/stats/'),
 }
 export default api

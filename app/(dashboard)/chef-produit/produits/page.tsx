@@ -9,7 +9,7 @@ import {
 } from '@mui/material'
 import { 
   AddCircleOutlined, DeleteOutlined, 
-  AccountBalanceWalletOutlined, RefreshOutlined 
+  AccountBalanceWalletOutlined, RefreshOutlined , BlockOutlined, CheckCircleOutlined
 } from '@mui/icons-material'
 import { produitAPI } from '@/lib/api'
 
@@ -52,16 +52,17 @@ export default function ProduitsPage() {
     chargerProduits()
   }, [chargerProduits])
 
-  const handleSupprimer = async (id: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir retirer ce produit du catalogue actif ?')) return
-    try {
-      await produitAPI.supprimer(id)
-      setProduits((prev) => prev.filter((p) => p.id !== id))
-    } catch (err) {
-      console.error(err)
-      setError('Erreur lors de la suppression du produit.')
-    }
+ const handleToggleActive = async (id: number, actuelStatut: boolean) => {
+  const action = actuelStatut ? 'désactiver' : 'réactiver'
+  if (!confirm(`Voulez-vous vraiment ${action} ce produit ?`)) return
+  try {
+    await produitAPI.modifier(id, { is_active: !actuelStatut })
+    chargerProduits()
+  } catch (err) {
+    console.error(err)
+    setError('Erreur lors du changement de statut du produit.')
   }
+}
 
   return (
     <Box sx={{ p: 1 }}>
@@ -120,11 +121,11 @@ export default function ProduitsPage() {
                   />
                 </TableCell>
                 <TableCell>
-                  <Tooltip title="Désactiver / Supprimer">
-                    <IconButton size="small" color="error" onClick={() => handleSupprimer(p.id)}>
-                      <DeleteOutlined sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
+                 <Tooltip title={p.is_active ? 'Désactiver le produit' : 'Activer le produit'}>
+                                     <IconButton size="small" color={p.is_active ? 'warning' : 'success'} onClick={() => handleToggleActive(p.id, p.is_active)}>
+                                       {p.is_active ? <BlockOutlined sx={{ fontSize: 18 }} /> : <CheckCircleOutlined sx={{ fontSize: 18 }} />}
+                                     </IconButton>
+                                   </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

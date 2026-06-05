@@ -71,7 +71,7 @@ export default function AgencesPage() {
         <Button
           variant="contained"
           startIcon={<AddCircleOutlined />}
-          onClick={() => router.push('/admin/agences/nouveau')}
+          onClick={() => router.push('/admin/agences/nouvelle')}
           sx={{ bgcolor: '#0D47A1', '&:hover': { bgcolor: '#0a3578' } }}
         >
           Nouvelle agence
@@ -169,7 +169,7 @@ export default function AgencesPage() {
                       icon={<AccountCircleOutlined style={{ fontSize: 16 }} />}
                       label="Aucun assigné"
                       size="small"
-                      variant="outlined" // 👈 Modifié "text" par "outlined" (ou tu peux enlever la propriété variant)
+                      variant="outlined" 
                       sx={{ color: 'text.disabled', fontStyle: 'italic', borderStyle: 'dashed' }} // Optionnel: style tirets pour faire "vide"
                     />
                   )}

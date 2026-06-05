@@ -1,121 +1,154 @@
 'use client'
 import { useEffect, useState } from 'react'
 import {
-  Box, Typography, Paper, Grid, Card, CardContent,
-  CircularProgress, Chip, LinearProgress,
-  Select, MenuItem, FormControl, InputLabel
+  Box, Typography, Grid, Card, CardContent,
+  CircularProgress, Alert, Divider
 } from '@mui/material'
 import {
-  GroupsOutlined, VerifiedUserOutlined, StorefrontOutlined,
-  TrendingUpOutlined, InventoryOutlined, LocationOnOutlined
+  PeopleOutlined, BusinessOutlined,
+  FolderZipOutlined, CategoryOutlined
 } from '@mui/icons-material'
-import { userAPI, archiveAgenceAPI } from '@/lib/api'
+import { archiveAgenceAPI, userAPI } from '@/lib/api'
 
-// ─── Composants Utilitaires ───────────────────────────────────
-function KPICard({ label, value, icon, color = '#3b82f6', sublabel }: any) {
-  return (
-    <Card sx={{ borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: 'none', height: '100%' }}>
-      <CardContent sx={{ p: 2.5 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>{label}</Typography>
-            <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>{value}</Typography>
-            {sublabel && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{sublabel}</Typography>}
-          </Box>
-          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: `${color}15`, color: color }}>{icon}</Box>
-        </Box>
-      </CardContent>
-    </Card>
-  )
+interface StatsBackend {
+  total_archives:     number
+  archives_completes: number
+  par_produit:        { produit__nom: string; total: number }[]
+  par_agence:         { agence__code: string; agence__nom: string; total: number }[]
+  par_ville:          { agence__ville__nom: string; total: number }[]
 }
 
-function ProgressBar({ label, value, max, color }: any) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0
-  return (
-    <Box sx={{ mb: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
-        <Typography variant="body2" sx={{ fontWeight: 700 }}>{pct}%</Typography>
+const StatCard = ({ icon, label, value, color }: {
+  icon:  React.ReactNode
+  label: string
+  value: number | string
+  color: string
+}) => (
+  <Card sx={{ height: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {label}
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color }}>
+            {value}
+          </Typography>
+        </Box>
+        <Box sx={{
+          width: 48, height: 48, borderRadius: 2,
+          bgcolor: `${color}18`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color,
+        }}>
+          {icon}
+        </Box>
       </Box>
-      <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 4, bgcolor: '#f1f5f9', '& .MuiLinearProgress-bar': { bgcolor: color } }} />
+    </CardContent>
+  </Card>
+)
+
+export default function ChefProduitDashboard() {
+  const [stats, setStats]         = useState<StatsBackend | null>(null)
+  const [nbUsers, setNbUsers]     = useState<number>(0)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
+
+  useEffect(() => {
+    const charger = async () => {
+      try {
+        const [{ data: s }, { data: u }] = await Promise.all([
+          archiveAgenceAPI.stats(),
+          userAPI.liste(),
+        ])
+        setStats(s)
+        setNbUsers(u.count ?? u.length)
+      } catch (err) {
+        console.error(err)
+        setError('Erreur lors du chargement des statistiques depuis l\'API.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    charger()
+  }, [])
+
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
+      <CircularProgress />
     </Box>
   )
-}
-
-// ─── Dashboard Principal ─────────────────────────────────────
-export default function ChefProduitDashboard() {
-  const [users, setUsers] = useState<any[]>([])
-  const [stats, setStats] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [filtrePeriode, setFiltrePeriode] = useState('30')
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [usersRes, statsRes] = await Promise.all([
-        userAPI.liste(),
-        archiveAgenceAPI.stats()
-      ])
-      
-      const allUsers = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data.results || [])
-      setUsers(allUsers.filter((u: any) => ['chef_agence', 'conformite'].includes(u.role)))
-      setStats(statsRes.data)
-    } catch (err) {
-      console.error("Erreur chargement dashboard", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { loadData() }, [filtrePeriode])
-
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}><CircularProgress /></Box>
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>Tableau de Bord Produit</Typography>
-          <Typography color="text.secondary">Pilotage du réseau et conformité documentaire</Typography>
-        </Box>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Période</InputLabel>
-          <Select value={filtrePeriode} label="Période" onChange={(e) => setFiltrePeriode(e.target.value)}>
-            <MenuItem value="30">30 derniers jours</MenuItem>
-            <MenuItem value="90">90 derniers jours</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+    <Box sx={{ p: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+        Tableau de bord  | Chef Produit
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        Suivi global de l'exploitation et de l'archivage financier
+      </Typography>
 
-      {/* KPIs Grid avec syntaxe MUI v6 (size au lieu de item) */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 3 }}><KPICard label="Total Archives" value={stats?.total || 0} icon={<InventoryOutlined />} color="#6366f1" /></Grid>
-        <Grid size={{ xs: 12, md: 3 }}><KPICard label="Chefs d'Agence" value={users.filter(u => u.role === 'chef_agence').length} icon={<StorefrontOutlined />} color="#10b981" /></Grid>
-        <Grid size={{ xs: 12, md: 3 }}><KPICard label="Agents Conformité" value={users.filter(u => u.role === 'conformite').length} icon={<VerifiedUserOutlined />} color="#8b5cf6" /></Grid>
-        <Grid size={{ xs: 12, md: 3 }}><KPICard label="Taux Complétion" value={`${stats?.taux || 0}%`} icon={<TrendingUpOutlined />} color="#f59e0b" /></Grid>
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+      {/* Grid Conteneur Principal des cartes */}
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+          <StatCard icon={<FolderZipOutlined />} label="Total Archives Agences" value={stats?.total_archives ?? 0} color="#0D47A1" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+          <StatCard icon={<PeopleOutlined />}    label="Utilisateurs Plateforme" value={nbUsers} color="#7c3aed" />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 12, md: 4 }}>
+          <StatCard icon={<BusinessOutlined />}  label="Agences Actives" value={stats?.par_agence?.length ?? 0} color="#16a34a" />
+        </Grid>
       </Grid>
 
-      {/* Analytics */}
-      <Grid container spacing={3}>
+      {/* Grid Conteneur des Tableaux Analytiques */}
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+        {/* Section Activité par Agence */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Répartition par Produit</Typography>
-            {stats?.par_produit?.map((p: any) => (
-              <ProgressBar key={p.nom} label={p.nom} value={p.valeur} max={stats.total} color="#3b82f6" />
-            ))}
-          </Paper>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BusinessOutlined sx={{ color: '#0D47A1' }} /> Volume d'archives par agence
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              {stats?.par_agence && stats.par_agence.length > 0 ? (
+                stats.par_agence.map((a, i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 1.2, borderBottom: i < stats.par_agence.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                    <Typography variant="body2">{a.agence__nom} ({a.agence__code})</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0D47A1' }}>{a.total} archive{a.total > 1 ? 's' : ''}</Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Aucune donnée disponible</Typography>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
+
+        {/* Section Activité par Produit */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Top Agences</Typography>
-            {stats?.par_agence?.slice(0, 5).map((a: any) => (
-              <Box key={a.code} sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <LocationOnOutlined sx={{ mr: 1, color: 'text.secondary' }} />
-                <Typography sx={{ flexGrow: 1 }}>{a.nom}</Typography>
-                <Chip label={`${a.total} docs`} size="small" sx={{ fontWeight: 600 }} />
-              </Box>
-            ))}
-          </Paper>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CategoryOutlined sx={{ color: '#7c3aed' }} /> Répartition par Produit
+              </Typography>
+              <Divider sx={{ mb: 1 }} />
+              {stats?.par_produit && stats.par_produit.length > 0 ? (
+                stats.par_produit.map((p, i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 1.2, borderBottom: i < stats.par_produit.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                    <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                      {p.produit__nom.replace('_', ' ')}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#7c3aed' }}>{p.total} dépôt{p.total > 1 ? 's' : ''}</Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Aucune donnée disponible</Typography>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Box>

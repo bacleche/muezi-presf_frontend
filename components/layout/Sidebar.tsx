@@ -67,6 +67,8 @@ const menuParRole: MenuParRole = {
     },
     { label: 'Agences', icon: <LocationCityOutlined />, href: '/chef-produit/agences' },
     { label: 'Produits', icon: <CategoryOutlined />, href: '/chef-produit/produits' },
+    { label: 'Clients', icon: <GroupOutlined />, href: '/chef-produit/clients' },
+
     {
       label: 'Statistiques Globales',
       icon: <BarChartOutlined />,

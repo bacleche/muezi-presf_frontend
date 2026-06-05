@@ -3,16 +3,33 @@ import { useEffect, useState, use } from 'react'
 import { 
   Box, Typography, Paper, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, IconButton, Chip, CircularProgress,
-  Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions, MenuItem
+  Button, Dialog, Switch, Tooltip ,DialogTitle, DialogContent, TextField, DialogActions, MenuItem
 } from '@mui/material'
-import { EditOutlined, PowerSettingsNewOutlined, AddCircleOutlined } from '@mui/icons-material'
+import { EditOutlined ,PowerSettingsNewOutlined, AddCircleOutlined } from '@mui/icons-material'
 import { userAPI, agenceAPI, paysAPI } from '@/lib/api'
 
+
+
+interface User {
+  id:         number
+  email:      string
+  nom:        string
+  prenom:     string
+  role:       'conformite' | 'chef_agence' | 'chef_produit' | 'superadmin'
+  is_active:  boolean
+  agence:     number | null
+  agence_nom: string | null
+  pays:       number | null
+  created_at: string
+}
 export default function UserList({ params }: { params: Promise<{ role: string }> }) {
   const { role } = use(params) 
-  const [users, setUsers] = useState<any[]>([])
+  // const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [openModal, setOpenModal] = useState(false)
+  const [users,        setUsers]        = useState<User[]>([])
+  const [error,        setError]        = useState('')
+  
   
   // Données pour les selects dynamiques
   const [agences, setAgences] = useState<any[]>([])
@@ -39,6 +56,17 @@ export default function UserList({ params }: { params: Promise<{ role: string }>
       setLoading(false)
     }
   }
+
+   const toggleActif = async (user: User) => {
+      try {
+        await userAPI.modifier(user.id, { is_active: !user.is_active })
+        setUsers(prev => prev.map(u =>
+          u.id === user.id ? { ...u, is_active: !u.is_active } : u
+        ))
+      } catch {
+        setError("Impossible de modifier l'état d'activité.")
+      }
+    }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -111,8 +139,13 @@ export default function UserList({ params }: { params: Promise<{ role: string }>
                   <TableCell>{user.email}</TableCell>
                   <TableCell><Chip label={user.is_active ? 'Actif' : 'Inactif'} size="small" /></TableCell>
                   <TableCell align="right">
-                    <IconButton onClick={() => userAPI.toggle(user.id).then(load)}><PowerSettingsNewOutlined /></IconButton>
+                     <Tooltip title={user.is_active ? "Suspendre l'accès" : "Activer l'accès"}>
+                                      <Switch checked={user.is_active} onChange={() => toggleActif(user)} color="success" size="small" />
+                  </Tooltip>
                   </TableCell>
+                
+
+                 
                 </TableRow>
               ))
             )}

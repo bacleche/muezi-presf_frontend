@@ -203,7 +203,7 @@ function BarRow({ label, value, total, color }: { label: string; value: number; 
 
 // ── Page principale ────────────────────────────────────────────
 
-export default function ConformiteDashboardPage() {
+export default function StatsChefProduitDashboardPage() {
   const [archives,        setArchives]        = useState<Archive[]>([])
   const [agences,         setAgences]         = useState<{ id: number; nom: string; code: string }[]>([])
   const [produits,        setProduits]        = useState<{ id: number; nom: string; nom_display: string }[]>([])
@@ -211,7 +211,9 @@ export default function ConformiteDashboardPage() {
   const [loading,         setLoading]         = useState(true)
   const [error,           setError]           = useState('')
   const [zipArchiveOpen,  setZipArchiveOpen]  = useState(false)   // modal mouvements agence
-  const [zipTxOpen,       setZipTxOpen]       = useState(false)   // modal transactions
+  const [zipTxOpen,       setZipTxOpen]       = useState(false)   // modal trans
+
+    // 2. Calculez les données à afficher pour la page courante
 
   const charger = async () => {
     setLoading(true)
@@ -458,9 +460,7 @@ export default function ConformiteDashboardPage() {
                     ({archivesRecentes.length} sur {totalArchives})
                   </Box>
                 </Typography>
-                <Button size="small" variant="text" href="/conformite/mouvements" sx={{ fontSize: 12 }}>
-                  Voir tout →
-                </Button>
+                
               </Box>
 
               <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
@@ -509,11 +509,6 @@ export default function ConformiteDashboardPage() {
                             <Chip label={statut} color={color} size="small" sx={{ fontSize: 11, height: 20 }} />
                           </TableCell>
                           <TableCell>
-                            <Tooltip title="Voir l'archive">
-                              <IconButton size="small" href="/conformite/mouvements">
-                                <VisibilityOutlined sx={{ fontSize: 15 }} />
-                              </IconButton>
-                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       )
