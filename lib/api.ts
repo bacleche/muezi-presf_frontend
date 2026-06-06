@@ -2,8 +2,21 @@
 
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
+
+function getBaseUrl(): string {
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+  if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000/api'
+  return `http://${host}:8000/api`
+}
+
+export function getWsUrl(): string {
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+  if (host === 'localhost' || host === '127.0.0.1') return 'ws://localhost:8000'
+  return `ws://${host}:8000`
+}
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
+  // baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
+  baseURL: getBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -26,7 +39,9 @@ api.interceptors.response.use(
       try {
         const refresh = localStorage.getItem('refresh_token')
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, 
+          // `${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, 
+          `${getBaseUrl()}/token/refresh/`, 
+
           { refresh }
         )
         localStorage.setItem('access_token', data.access)
@@ -40,6 +55,8 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+
 
 // ── Types réponses Authentification ─────────────
 export interface LoginData {
