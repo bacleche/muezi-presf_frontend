@@ -42,7 +42,7 @@ const menuParRole: MenuParRole = {
     { label: 'Tableau de bord',       icon: <DashboardOutlined />,      href: '/conformite' },
     { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },
     { label: 'Mouvements Agences',    icon: <SwapHorizOutlined />,      href: '/conformite/mouvements' },
-    { label: 'Archives & Exports',    icon: <FolderOutlined />,         href: '/conformite/archives' },
+    // { label: 'Archives & Exports',    icon: <FolderOutlined />,         href: '/conformite/archives' },
     { label: 'Statistiques globales', icon: <BarChartOutlined />,       href: '/conformite/stats' },
   ],
   superadmin: [

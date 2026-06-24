@@ -192,6 +192,11 @@ export const transactionAPI = {
 
    exportZip: (params: { date_debut: string; date_fin: string }) =>
     api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
+   afficherDoc: (txId: number, docId: number) => 
+    api.get(`/transactions/${txId}/afficher-doc/`, { 
+      params: { doc_id: docId }, 
+      responseType: 'blob' 
+    }),
 }
 
 export const produitAPI = {

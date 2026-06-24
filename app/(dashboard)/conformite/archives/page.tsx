@@ -31,7 +31,6 @@ interface Enregistrement {
   date_paiement:      string
   caissier_nom:       string
   agence_nom:         string | null
-  statut:             'en_attente' | 'valide' | 'rejete'
   documents_complets: boolean
   documents:          Document[]
   created_at:         string
@@ -210,7 +209,7 @@ export default function ArchivesPage() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#1e293b' }}>
-              {['Client', 'Pièce', 'Caissier / Agence', 'Date paiement', 'Statut', 'Documents', 'ZIP'].map((h) => (
+              {['Client', 'Pièce', 'Caissier / Agence', 'Date paiement', 'Documents', 'ZIP'].map((h) => (
                 <TableCell key={h} sx={{ color: 'white', fontWeight: 700 }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -256,14 +255,7 @@ export default function ArchivesPage() {
                   </Typography>
                 </TableCell>
 
-                <TableCell>
-                  <Chip
-                    label={STATUT_CONFIG[e.statut].label}
-                    color={STATUT_CONFIG[e.statut].color}
-                    size="small"
-                    icon={STATUT_CONFIG[e.statut].icon}
-                  />
-                </TableCell>
+               
 
                 <TableCell>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>

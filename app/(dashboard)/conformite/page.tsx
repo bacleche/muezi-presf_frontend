@@ -254,10 +254,21 @@ export default function ConformiteDashboardPage() {
     telechargerBlob(data, `mouvements_agence_${dateDebut}_au_${dateFin}.zip`)
   }
 
+  // const handleExportZipTransactions = async (dateDebut: string, dateFin: string) => {
+  //   const { data } = await transactionAPI.exportZip({ date_debut: dateDebut, date_fin: dateFin })
+  //   telechargerBlob(data, `transactions_${dateDebut}_au_${dateFin}.zip`)
+  // }
+
   const handleExportZipTransactions = async (dateDebut: string, dateFin: string) => {
+  try {
     const { data } = await transactionAPI.exportZip({ date_debut: dateDebut, date_fin: dateFin })
     telechargerBlob(data, `transactions_${dateDebut}_au_${dateFin}.zip`)
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      // afficher : "Aucune transaction trouvée pour cette période"
+    }
   }
+}
 
   // ── Calculs ────────────────────────────────────────────────
 

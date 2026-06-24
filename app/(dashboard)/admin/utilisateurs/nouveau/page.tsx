@@ -105,7 +105,7 @@ export default function NouvelUtilisateurPage() {
       }
       // On s'assure d'envoyer l'ID sous forme d'entier
       payload.agence = Number(form.agence);
-    }else if (form.role === 'chef_produit') {
+    }else if (form.role === 'chef_produit' || form.role === 'conformite') {
       if (!form.pays) {
         setError("Veuillez sélectionner un pays pour le Chef de Produit.")
         setLoading(false); return;
@@ -222,7 +222,7 @@ export default function NouvelUtilisateurPage() {
                 required helperText="Minimum 8 caractères" />
             </Grid>
           </Grid>
-          {form.role === 'chef_produit' && (
+          {(form.role === 'chef_produit' || form.role === 'conformite') && (
               <Grid size={{ xs: 12 }}>
                 <TextField fullWidth select label="Pays" name="pays"
                   value={form.pays} onChange={handleChange} required>

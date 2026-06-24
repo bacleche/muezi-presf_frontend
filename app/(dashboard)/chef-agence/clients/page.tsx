@@ -122,7 +122,7 @@ export default function ClientsAgencePage() {
             ) : clients.map((c) => (
               <TableRow key={c.id} hover>
                 <TableCell sx={{ fontWeight: 600 }}>{`${c.nom.toUpperCase()} ${c.prenom}`}</TableCell>
-                <TableCell>{c.adresse || '—'}</TableCell>
+                <TableCell>{c.telephone || '—'}</TableCell>
                 <TableCell>{c.email || '—'}</TableCell>
                 <TableCell>{new Date(c.created_at).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell>
