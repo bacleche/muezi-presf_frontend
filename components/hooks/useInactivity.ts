@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation'
 import useAuthStore from '@/store/authStore'
 import { useSnackbar } from 'notistack'
 
-const TIMEOUT_MS = 5 * 60 * 1000   // 5 minutes
-const WARNING_MS = 4 * 60 * 1000   // avertir à 4 minutes
+const TIMEOUT_MS = 45 * 60 * 1000   // 45 minutes
+const WARNING_MS = 40 * 60 * 1000   // avertir à 40 minutes (5 min avant)
 
 export default function useInactivity() {
   const router                              = useRouter()
