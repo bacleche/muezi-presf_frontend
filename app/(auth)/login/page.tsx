@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState , Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image';
 import {
@@ -14,7 +14,8 @@ import { useSnackbar } from 'notistack'
 import { authAPI } from '@/lib/api'
 import useAuthStore from '@/store/authStore'
 
-export default function LoginPage() {
+// export default function LoginPage()
+function LoginContent() {
   const router          = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const setPendingEmail = useAuthStore((s) => s.setPendingEmail)
@@ -305,5 +306,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         </Card>
       </Fade>
     </Box>
+  )
+}
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   )
 }
