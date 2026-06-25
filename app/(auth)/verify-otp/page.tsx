@@ -111,8 +111,6 @@ export default function VerifyOtpPage() {
     // Redirection dynamique et chirurgicale selon le rôle
     if (user.role === 'superadmin') {
       router.push('/admin')
-    } else if (user.role === 'caissier') {
-      router.push('/caissier')
     } else if (user.role === 'conformite') {
       router.push('/conformite')
     } else if (user.role === 'chef_produit') {
