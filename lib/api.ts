@@ -3,15 +3,31 @@
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 
+// function getBaseUrl(): string {
+//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+//   if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000/api'
+//   return `http://${host}:8000/api`
+// }
+
+// export function getWsUrl(): string {
+//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+//   if (host === 'localhost' || host === '127.0.0.1') return 'ws://localhost:8000'
+//   return `ws://${host}:8000`
+// }
+
 function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL
+  }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000/api'
-  return `http://${host}:8000/api`
+  return `https://${host}:8000/api`
 }
 
 export function getWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL
+  }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  if (host === 'localhost' || host === '127.0.0.1') return 'ws://localhost:8000'
   return `ws://${host}:8000`
 }
 const api = axios.create({
