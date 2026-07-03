@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Box, Typography, Card, CardContent, Button,
-  Grid, TextField, MenuItem, Alert, CircularProgress
+  Grid, TextField, MenuItem, Alert, CircularProgress,
+  InputAdornment
 } from '@mui/material'
-import { SaveOutlined, ArrowBackOutlined } from '@mui/icons-material'
+import { SaveOutlined, ArrowBackOutlined, AutoAwesomeOutlined } from '@mui/icons-material'
 import { agenceAPI, paysAPI, villeAPI } from '@/lib/api'
 
 // Interfaces calquées sur tes modèles Django
@@ -30,19 +31,22 @@ export default function NouvelleAgencePage() {
   const [loadingPays, setLoadingPays] = useState(true)
   const [loadingVilles, setLoadingVilles] = useState(false)
 
+  // Génération automatique du code
+  const [codeGenere, setCodeGenere]   = useState('')
+  const [loadingCode, setLoadingCode] = useState(false)
+
   // Le formulaire stocke désormais des IDs numériques pour les clés étrangères
-  const [form, setForm] = useState({ 
-    nom: '', 
-    code: '', 
-    pays: '' as number | '', 
-    ville: '' as number | '' 
+  const [form, setForm] = useState({
+    nom: '',
+    code: '', // reste modifiable manuellement si besoin, mais pré-rempli automatiquement
+    pays: '' as number | '',
+    ville: '' as number | ''
   })
 
   // 1. Charger uniquement les pays actifs au montage du composant
   useEffect(() => {
     paysAPI.liste()
       .then(({ data }) => {
-        // Gère la pagination si Django renvoie { results: [...] } ou un tableau brut
         setListePays(data.results ?? data)
       })
       .catch(() => setError('Impossible de charger la liste des pays.'))
@@ -55,11 +59,10 @@ export default function NouvelleAgencePage() {
       setListeVilles([])
       return
     }
-    
+
     setLoadingVilles(true)
     setError('')
-    
-    // Filtrage côté serveur : Django ne renverra que les villes de ce pays
+
     villeAPI.liste({ pays: form.pays })
       .then(({ data }) => {
         setListeVilles(data.results ?? data)
@@ -68,11 +71,65 @@ export default function NouvelleAgencePage() {
       .finally(() => setLoadingVilles(false))
   }, [form.pays])
 
+  // 3. Génération automatique du code dès que Pays + Ville + Nom sont renseignés
+  //    (debounce 400ms pour éviter un appel à chaque frappe)
+  useEffect(() => {
+    if (form.pays === '' || form.ville === '' || form.nom.trim().length < 2) {
+      setCodeGenere('')
+      return
+    }
+
+    // const t = setTimeout(() => {
+    //   setLoadingCode(true)
+    //   agenceAPI.previewCode({
+    //     pays_id:  form.pays,
+    //     ville_id: form.ville,
+    //     nom:      form.nom,
+    //   })
+    //     .then(({ data }) => {
+    //       setCodeGenere(data.code)
+    //       // Le code proposé alimente aussi form.code (modifiable si besoin)
+    //       setForm((prev) => ({ ...prev, code: data.code }))
+    //     })
+    //     .catch(() => {
+    //       // En cas d'échec de la prévisualisation, on laisse le champ vide/manuel
+    //       setCodeGenere('')
+    //     })
+    //     .finally(() => setLoadingCode(false))
+    // }, 400)
+
+    const t = setTimeout(() => {
+  // Guard clause: Only call the API if IDs are actually present
+  if (form.pays === "" || form.ville === "") return;
+
+  setLoadingCode(true);
+  
+  agenceAPI.previewCode({
+    pays_id:  Number(form.pays),
+    ville_id: Number(form.ville),
+    nom:      form.nom,
+  })
+    .then(({ data }) => {
+      setCodeGenere(data.code);
+      setForm((prev) => ({ ...prev, code: data.code }));
+    })
+    .catch((err) => {
+      console.error("Erreur lors de la génération du code:", err);
+      setCodeGenere('');
+    })
+    .finally(() => {
+      setLoadingCode(false);
+    });
+}, 400);
+
+    return () => clearTimeout(t)
+  }, [form.pays, form.ville, form.nom])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setForm((prev) => {
       const updated = { ...prev, [name]: value }
-      
+
       // Si l'utilisateur change de pays, on remet obligatoirement la ville à zéro
       if (name === 'pays') {
         updated.ville = ''
@@ -85,8 +142,6 @@ export default function NouvelleAgencePage() {
     setLoading(true)
     setError('')
     try {
-      // payload envoyé à Django : { nom, code, ville: ID }
-      // Le code est automatiquement passé en majuscules pour rester propre
       await agenceAPI.creer({
         nom: form.nom,
         code: form.code.toUpperCase(),
@@ -126,21 +181,8 @@ export default function NouvelleAgencePage() {
           {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
           <Grid container spacing={2.5}>
-            <Grid size={{ xs: 12 }}>
-              <TextField fullWidth label="Nom de l'agence" name="nom"
-                value={form.nom} onChange={handleChange} required
-                placeholder="Ex: Agence Centrale Brazzaville" />
-            </Grid>
-            
-            <Grid size={{ xs: 12 }}>
-              <TextField fullWidth label="Code Unique" name="code"
-                value={form.code} onChange={handleChange} required
-                placeholder="Ex: BZV01"
-                slotProps={{ htmlInput: { style: { textTransform: 'uppercase' } } }}
-                helperText="Identifiant unique de la succursale" />
-            </Grid>
 
-            {/* Sélecteur de Pays Dynamique */}
+            {/* Sélecteur de Pays Dynamique — déplacé avant le nom pour piloter la génération du code */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth select label="Zone Pays" name="pays"
                 value={form.pays} onChange={handleChange} required
@@ -159,8 +201,8 @@ export default function NouvelleAgencePage() {
                 value={form.ville} onChange={handleChange} required
                 disabled={form.pays === '' || loadingVilles}
                 helperText={
-                  form.pays === '' 
-                    ? "Choisissez d'abord un pays" 
+                  form.pays === ''
+                    ? "Choisissez d'abord un pays"
                     : loadingVilles ? "Mise à jour..." : "Villes disponibles"
                 }
               >
@@ -169,6 +211,47 @@ export default function NouvelleAgencePage() {
                 ))}
               </TextField>
             </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Nom de l'agence" name="nom"
+                value={form.nom} onChange={handleChange} required
+                placeholder="Ex: Agence Centrale Brazzaville"
+                disabled={form.pays === '' || form.ville === ''}
+                helperText={
+                  form.pays === '' || form.ville === ''
+                    ? "Sélectionnez d'abord le pays et la ville"
+                    : "Le code sera généré automatiquement"
+                }
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Code Unique (généré automatiquement)"
+                name="code"
+                value={form.code}
+                onChange={handleChange}
+                required
+                placeholder="Se remplit automatiquement..."
+                slotProps={{
+                  htmlInput: { style: { textTransform: 'uppercase' } },
+                  input: {
+                    endAdornment: loadingCode ? (
+                      <InputAdornment position="end">
+                        <CircularProgress size={16} />
+                      </InputAdornment>
+                    ) : codeGenere ? (
+                      <InputAdornment position="end">
+                        <AutoAwesomeOutlined sx={{ fontSize: 18, color: 'success.main' }} />
+                      </InputAdornment>
+                    ) : undefined,
+                  },
+                }}
+                helperText="Généré à partir du pays, de la ville et du nom — modifiable si besoin"
+              />
+            </Grid>
+
           </Grid>
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>

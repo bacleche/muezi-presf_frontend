@@ -175,6 +175,8 @@ export const agenceAPI = {
 
   modifier: (id: number, data: object) => 
     api.patch(`/agences/${id}/`, data),
+  previewCode: (params: { pays_id: number; ville_id: number; nom: string }) =>
+    api.get('/agences/preview-code/', { params }),
 }
 
 export const archiveAgenceAPI = {
