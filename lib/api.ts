@@ -252,7 +252,7 @@ export const clientAPI = {
   
   // URL : POST /api/clients/{id}/add-piece/
  // Dans lib/api.ts
-ajouterPiece: (id: number, data: FormData) => api.post(`/clients/${id}/add-piece/`, data, {
+ajouterPiece: (id: number, data: FormData) => api.post(`/clients/${id}/pieces/`, data, {
     headers: { 'Content-Type': 'multipart/form-data' } 
 }),
 
