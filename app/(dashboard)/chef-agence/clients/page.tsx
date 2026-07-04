@@ -8,7 +8,7 @@ import {
 } from '@mui/material'
 import { 
   SearchOutlined, PersonAddOutlined, 
-  BadgeOutlined, RefreshOutlined 
+  EditOutlined, RefreshOutlined 
 } from '@mui/icons-material'
 import { clientAPI } from '@/lib/api'
 
@@ -126,12 +126,12 @@ export default function ClientsAgencePage() {
                 <TableCell>{c.email || '—'}</TableCell>
                 <TableCell>{new Date(c.created_at).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell>
-                  <Tooltip title="Gérer les pièces d'identité">
+                  <Tooltip title="Modifier le client">
                     <IconButton 
                       color="primary" 
-                      onClick={() => router.push(`/chef-agence/clients/${c.id}/pieces`)}
+                      onClick={() => router.push(`/chef-agence/clients/${c.id}/modifier`)}
                     >
-                      <BadgeOutlined />
+                      <EditOutlined />
                     </IconButton>
                   </Tooltip>
                 </TableCell>
