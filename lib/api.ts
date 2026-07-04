@@ -208,14 +208,8 @@ export const transactionAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
 
-   exportZip: (params: {
-    date_debut: string
-    date_fin: string
-    agence_id?: number
-    client_id?: number
-    produit_id?: number
-  }) => api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
-
+   exportZip: (params: { date_debut: string; date_fin: string }) =>
+    api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
    afficherDoc: (txId: number, docId: number) => 
     api.get(`/transactions/${txId}/afficher_doc/`, { 
       params: { doc_id: docId }, 
