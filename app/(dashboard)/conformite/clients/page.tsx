@@ -62,14 +62,14 @@ export default function ClientsAgencePage() {
             Gestion des clients rattachés à votre agence et suivi des pièces de conformité
           </Typography>
         </Box>
-        <Button
+        {/* <Button
           variant="contained"
           startIcon={<PersonAddOutlined />}
           onClick={() => router.push('/chef-agence/clients/nouveau')}
           sx={{ bgcolor: '#0D47A1', '&:hover': { bgcolor: '#0a3578' }, textTransform: 'none', borderRadius: 2 }}
         >
           Enregistrer un Client
-        </Button>
+        </Button> */}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
