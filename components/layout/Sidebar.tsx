@@ -40,6 +40,7 @@ interface MenuParRole {
 const menuParRole: MenuParRole = {
   conformite: [
     { label: 'Tableau de bord',       icon: <DashboardOutlined />,      href: '/conformite' },
+    { label: 'Liste des clients', icon: <GroupOutlined />,    href: '/conformite/clients' },
     { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },
     { label: 'Mouvements Agences',    icon: <SwapHorizOutlined />,      href: '/conformite/mouvements' },
     // { label: 'Archives & Exports',    icon: <FolderOutlined />,         href: '/conformite/archives' },
