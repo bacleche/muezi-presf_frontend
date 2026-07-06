@@ -246,7 +246,7 @@ export const auditAPI = {
 // À vérifier/ajouter dans ton lib/api.ts
 export const clientAPI = {
   liste: (params?: object) => api.get('/clients/', { params }),
-  
+  detail: (id: number) => api.get(`/clients/${id}/`), 
   // Modifiez la méthode creer ici
   creer: (data: FormData) => api.post('/clients/', data, {
     headers: {
