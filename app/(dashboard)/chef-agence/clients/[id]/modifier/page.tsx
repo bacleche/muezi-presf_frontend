@@ -23,7 +23,7 @@ export default function ModifierClientPage() {
     prenom: '',
     telephone: '',
     email: '',
-    adresse: '',
+    // adresse: '',
   })
 
   // ── Charger les données actuelles du client ──────────────────
@@ -36,7 +36,7 @@ export default function ModifierClientPage() {
           prenom:    data.prenom || '',
           telephone: data.telephone || '',
           email:     data.email || '',
-          adresse:   data.adresse || '',
+        //   adresse:   data.adresse || '',
         })
       })
       .catch(() => setError('Impossible de charger les informations du client.'))
@@ -58,7 +58,7 @@ export default function ModifierClientPage() {
         prenom:    form.prenom.trim(),
         telephone: form.telephone.trim(),
         email:     form.email.trim(),
-        adresse:   form.adresse.trim(),
+        // adresse:   form.adresse.trim(),
       })
       router.push('/chef-agence/clients')
     } catch (err: any) {
@@ -110,9 +110,9 @@ export default function ModifierClientPage() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth type="email" label="Email" name="email" value={form.email} onChange={handleChange} />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              {/* <Grid size={{ xs: 12 }}>
                 <TextField fullWidth label="Adresse" name="adresse" value={form.adresse} onChange={handleChange} />
-              </Grid>
+              </Grid> */}
             </Grid>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
