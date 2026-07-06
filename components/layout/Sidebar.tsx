@@ -61,6 +61,7 @@ const menuParRole: MenuParRole = {
     { label: 'Agences',          icon: <BusinessOutlined />,     href: '/admin/agences' },
     { label: 'Produits',         icon: <CategoryOutlined />,     href: '/admin/produits' },
     { label: 'Statistiques',     icon: <BarChartOutlined />,     href: '/admin/stats' },
+    { label: 'Liste des clients', icon: <GroupOutlined />,    href: '/admin/clients' },
     { label: "Journal d'audit",  icon: <HistoryOutlined />,      href: '/admin/logs' },
   ],
  chef_produit: [
