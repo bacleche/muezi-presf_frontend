@@ -101,7 +101,7 @@ export default function ClientsAgencePage() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#0f172a' }}>
-              {['Nom & Prénom', 'Téléphone', 'Email', 'Date d\'inscription', 'Actions'].map((h) => (
+              {['Nom & Prénom', 'Téléphone', 'Email', 'Date d\'inscription'].map((h) => (
                 <TableCell key={h} sx={{ color: 'white', fontWeight: 600, py: 2 }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -125,16 +125,6 @@ export default function ClientsAgencePage() {
                 <TableCell>{c.telephone || '—'}</TableCell>
                 <TableCell>{c.email || '—'}</TableCell>
                 <TableCell>{new Date(c.created_at).toLocaleDateString('fr-FR')}</TableCell>
-                <TableCell>
-                  <Tooltip title="Gérer les pièces d'identité">
-                    <IconButton 
-                      color="primary" 
-                      onClick={() => router.push(`/conformite/clients/${c.id}/pieces`)}
-                    >
-                      <BadgeOutlined />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
