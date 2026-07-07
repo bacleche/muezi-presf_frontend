@@ -221,6 +221,9 @@ export const transactionAPI = {
       params: { doc_id: docId }, 
       responseType: 'blob' 
     }),
+
+    recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string }) =>
+    api.get('/transactions/recap-client/', { params }),
 }
 
 export const produitAPI = {
