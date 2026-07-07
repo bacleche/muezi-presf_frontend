@@ -206,7 +206,7 @@ export default function ClientsAgencePage() {
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>Portefeuille Clients</Typography>
           <Typography variant="body2" color="text.secondary">
-            Gestion des clients rattachés à votre agence et suivi des pièces de conformité
+            Gestion des clients (UNITÉ CONFORMITÉ ET SUIVI DES PIÈCES D'IDENTITÉ)
           </Typography>
         </Box>
         {/* <Button
