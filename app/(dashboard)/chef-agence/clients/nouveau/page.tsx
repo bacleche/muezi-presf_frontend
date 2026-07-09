@@ -291,7 +291,7 @@ export default function NouveauClientPage() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth type="email" label="Email" name="email" value={form.email} onChange={handleChange} />
               </Grid>
-{/* 
+      
               <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" sx={{ mb: 2, mt: 2, fontWeight: 700 }}>
                   Documents d'identité (Recto/Verso conseillé)
@@ -324,7 +324,10 @@ export default function NouveauClientPage() {
                     </Grid>
                   </Grid>
                 ))}
-              </Grid> */}
+              </Grid> 
+              
+           
+
             </Grid>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
