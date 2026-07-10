@@ -129,7 +129,7 @@ export default function ClientsAgencePage() {
                   <Tooltip title="Gérer les pièces d'identité">
                     <IconButton 
                       color="primary" 
-                      onClick={() => router.push(`/conformite/clients/${c.id}/pieces`)}
+                      onClick={() => router.push(`/chef-agence/clients/${c.id}/pieces`)}
                     >
                       <BadgeOutlined />
                     </IconButton>
