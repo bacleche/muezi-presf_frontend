@@ -270,6 +270,10 @@ ajouterPiece: (id: number, data: FormData) => api.post(`/clients/${id}/pieces/`,
 }),
 
 statschefAgence: () => api.get('/clients/stats-chefagence/'),
+ renouvelerPiece: (clientId: number, pieceId: number, data: FormData) =>
+    api.patch(`/clients/${clientId}/pieces/${pieceId}/renouveler/`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 }
 
 export const StatsAPI = {
