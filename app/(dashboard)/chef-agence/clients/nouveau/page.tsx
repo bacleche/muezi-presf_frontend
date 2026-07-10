@@ -491,7 +491,10 @@ export default function NouveauClientPage() {
                         name={`${doc.name}_expiration`}
                         value={form[`${doc.name}_expiration` as keyof typeof form]}
                         onChange={handleChange}
-                        slotProps={{ inputLabel: { shrink: true } }}
+                        slotProps={{
+                          inputLabel: { shrink: true },
+                          htmlInput: { min: new Date().toISOString().split('T')[0] }  // ← empêche le calendrier de proposer une date passée
+                        }}
                       />
                     </Grid>
 
