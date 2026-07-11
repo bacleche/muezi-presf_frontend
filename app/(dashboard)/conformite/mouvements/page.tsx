@@ -1808,17 +1808,18 @@ function regrouperParProduitEtAgence(archives: Archive[]): ProduitGroupe[] {
 
 const EXTENSIONS_IMAGE = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']
 
-function getExtension(url: string): string {
+function getExtension(url?: string | null): string {
+  if (!url) return ''
   const sansParams = url.split('?')[0]
   const morceaux   = sansParams.split('.')
   return morceaux.length > 1 ? morceaux[morceaux.length - 1].toLowerCase() : ''
 }
 
-function estImage(url: string): boolean {
+function estImage(url?: string | null): boolean {
   return EXTENSIONS_IMAGE.includes(getExtension(url))
 }
 
-function estPdf(url: string): boolean {
+function estPdf(url?: string | null): boolean {
   return getExtension(url) === 'pdf'
 }
 
@@ -1840,7 +1841,7 @@ function DocumentPreviewDialog({
           {document?.type_doc_display ?? 'Document'}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {document && (
+          {document && document.fichier && (
             <>
               <Tooltip title="Ouvrir dans un nouvel onglet">
                 <IconButton size="small" component="a" href={document.fichier} target="_blank" rel="noopener noreferrer">
@@ -1886,7 +1887,16 @@ function DocumentPreviewDialog({
           />
         )}
 
-        {document && !estImage(document.fichier) && !estPdf(document.fichier) && (
+        {document && !document.fichier && (
+          <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
+            <InsertDriveFileOutlined sx={{ fontSize: 40, mb: 1.5, opacity: 0.5 }} />
+            <Typography sx={{ fontSize: 13 }}>
+              Ce document n'a pas de fichier associé.
+            </Typography>
+          </Box>
+        )}
+
+        {document && document.fichier && !estImage(document.fichier) && !estPdf(document.fichier) && (
           <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
             <InsertDriveFileOutlined sx={{ fontSize: 40, mb: 1.5, opacity: 0.5 }} />
             <Typography sx={{ fontSize: 13, mb: 1.5 }}>
