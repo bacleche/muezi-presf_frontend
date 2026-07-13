@@ -373,29 +373,51 @@ export default function NouveauClientPage() {
   const [error, setError] = useState('')
   const [files, setFiles] = useState<Record<string, File | null>>({})
 
+  // const [form, setForm] = useState({
+  //   nom: '',
+  //   prenom: '',
+  //   telephone: '',
+  //   email: '',
+  //   adresse: '',
+  //   cni_numero: '',
+  //   cni_expiration: '',
+  //   permis_numero: '',
+  //   permis_expiration: '',
+  //   passport_numero: '',
+  //   passport_expiration: '',
+  //   niu_numero: '',
+  //   niu_expiration: '',
+  // })
+
   const [form, setForm] = useState({
-    nom: '',
-    prenom: '',
-    telephone: '',
-    email: '',
-    adresse: '',
-    cni_numero: '',
-    cni_expiration: '',
-    permis_numero: '',
-    permis_expiration: '',
-    passport_numero: '',
-    passport_expiration: '',
-    niu_numero: '',
-    niu_expiration: '',
-  })
+  nom: '', prenom: '', telephone: '', email: '', adresse: '',
+  cni_numero: '', cni_expiration: '',
+  permis_numero: '', permis_expiration: '',
+  passport_numero: '', passport_expiration: '',
+  niu_numero: '', niu_expiration: '',
+  permis_etranger_numero: '', permis_etranger_expiration: '',
+  resident_numero: '', resident_expiration: '',
+  refugie_numero: '', refugie_expiration: '',
+  consulaire_numero: '', consulaire_expiration: '',
+})
+
+  // const DOCUMENTS = [
+  //   { name: 'cni', label: 'CNI' },
+  //   { name: 'permis', label: 'Permis' },
+  //   { name: 'passport', label: 'Passeport' },
+  //   { name: 'niu', label: 'NIU' },
+  // ];
 
   const DOCUMENTS = [
-    { name: 'cni', label: 'CNI' },
-    { name: 'permis', label: 'Permis' },
-    { name: 'passport', label: 'Passeport' },
-    { name: 'niu', label: 'NIU' },
-  ];
-
+  { name: 'cni', label: 'CNI' },
+  { name: 'permis', label: 'Permis' },
+  { name: 'permis_etranger', label: 'Permis étranger' },
+  { name: 'passport', label: 'Passeport' },
+  { name: 'niu', label: 'NIU' },
+  { name: 'resident', label: 'Carte de résident' },
+  { name: 'refugie', label: 'Carte de réfugié' },
+  { name: 'consulaire', label: 'Carte consulaire' },
+];
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
