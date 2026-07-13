@@ -495,11 +495,22 @@ interface Piece {
   updated_at: string
 }
 
+// const TYPES_PIECES = [
+//   { value: 'cni', label: "Carte Nationale d'Identité" },
+//   { value: 'passport', label: 'Passeport' },
+//   { value: 'permis', label: 'Permis de conduire' },
+//   { value: 'niu', label: 'NIU (Numéro d\'Identification Unique)' },
+// ]
+
 const TYPES_PIECES = [
   { value: 'cni', label: "Carte Nationale d'Identité" },
   { value: 'passport', label: 'Passeport' },
   { value: 'permis', label: 'Permis de conduire' },
+  { value: 'permis_etranger', label: 'Permis de conduire étranger' },
   { value: 'niu', label: 'NIU (Numéro d\'Identification Unique)' },
+  { value: 'resident', label: 'Carte de résident' },
+  { value: 'refugie', label: 'Carte de réfugié' },
+  { value: 'consulaire', label: 'Carte consulaire' },
 ]
 
 const EXTENSIONS_IMAGE = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
