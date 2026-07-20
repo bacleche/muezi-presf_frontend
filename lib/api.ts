@@ -20,7 +20,7 @@ function getBaseUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL
   }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `https://${host}:8000/api`
+  return `http://${host}:8000/api`
 }
 
 export function getWsUrl(): string {
@@ -30,12 +30,18 @@ export function getWsUrl(): string {
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
   return `ws://${host}:8000`
 }
+// const api = axios.create({
+//   // baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
+//   baseURL: getBaseUrl(),
+//   headers: { 'Content-Type': 'application/json' },
+// })
 const api = axios.create({
-  // baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
   baseURL: getBaseUrl(),
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Plateforme': 'presf', // ← ajouté
+  },
 })
-
 // ── Injecter le token JWT ──────────────────────
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined') {
