@@ -314,9 +314,9 @@ export default function NouveauClientPage() {
                         startIcon={<PhotoCamera />}
                         sx={{ height: '40px' }}
                       >
-                        {files[`${doc.name}_file`] ? 'Image prête' : `Photo ${doc.label}`}
+                        {files[`${doc.name}`] ? 'Image prête' : `Photo ${doc.label}`}
                         <input 
-                          type="file" name={`${doc.name}_file`} hidden 
+                          type="file" name={`${doc.name}`} hidden 
                           accept="image/*" capture="environment" 
                           onChange={handleFileChange} 
                         />

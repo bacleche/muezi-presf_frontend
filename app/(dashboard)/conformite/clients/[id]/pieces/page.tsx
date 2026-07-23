@@ -466,7 +466,6 @@
 //   )
 // }
 
-
 'use client'
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
@@ -494,13 +493,6 @@ interface Piece {
   created_at: string
   updated_at: string
 }
-
-// const TYPES_PIECES = [
-//   { value: 'cni', label: "Carte Nationale d'Identité" },
-//   { value: 'passport', label: 'Passeport' },
-//   { value: 'permis', label: 'Permis de conduire' },
-//   { value: 'niu', label: 'NIU (Numéro d\'Identification Unique)' },
-// ]
 
 const TYPES_PIECES = [
   { value: 'cni', label: "Carte Nationale d'Identité" },
@@ -573,7 +565,7 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
   const [renouvFile, setRenouvFile]     = useState<File | null>(null)
   const [renouvLoading, setRenouvLoading] = useState(false)
 
-  // ── NOUVEAU : Prévisualisation ─────────────────────────────────
+  // ── Prévisualisation ─────────────────────────────────
   const [dialogPreview, setDialogPreview] = useState(false)
   const [pieceAVoir, setPieceAVoir]       = useState<Piece | null>(null)
 
@@ -651,7 +643,7 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // ── NOUVEAU : Ouvrir/fermer la prévisualisation ────────────────
+  // ── Ouvrir/fermer la prévisualisation ────────────────
   const ouvrirPreview = (piece: Piece) => {
     setPieceAVoir(piece)
     setDialogPreview(true)
@@ -716,6 +708,11 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
                         }
                       >
                         <ContactPageOutlined sx={{ color: '#0D47A1', mr: 2 }} />
+                        {/* FIX hydratation : `secondary` contient un <Box> (donc
+                            un <div>, via BadgeExpiration -> Chip -> <div>) qui ne
+                            peut pas être imbriqué dans le <p> que ListItemText
+                            rend par défaut pour `secondary`. On force ce wrapper
+                            à être un <div> via slotProps. */}
                         <ListItemText
                           primary={pieceInfo ? pieceInfo.label : p.type_piece}
                           secondary={
@@ -724,6 +721,7 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
                               <BadgeExpiration piece={p} />
                             </Box>
                           }
+                          slotProps={{ secondary: { component: 'div' } }}
                         />
                       </ListItem>
                       {idx < pieces.length - 1 && <Divider />}
@@ -828,7 +826,7 @@ export default function PiecesClientPage({ params }: { params: Promise<{ id: str
         </DialogActions>
       </Dialog>
 
-      {/* ── NOUVEAU : Modale de prévisualisation ── */}
+      {/* ── Modale de prévisualisation ── */}
       <Dialog open={dialogPreview} onClose={fermerPreview} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {pieceAVoir

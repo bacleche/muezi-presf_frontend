@@ -2830,6 +2830,8 @@ export default function ArchivageTransactionsPage() {
   // ── NOUVEAU : détection mobile pour basculer upload <-> capture photo ──
   const isMobile = useMediaQuery('(max-width:600px)')
   // Attributs à injecter dans les <input type="file">.
+  const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD, en heure locale
+
   // Sur mobile : accept restreint aux images + ouverture directe de l'appareil photo.
   // Sur PC     : accept large (pdf/jpg/png) + pas d'attribut capture (comportement inchangé).
   const fileInputProps = isMobile
@@ -2905,6 +2907,7 @@ export default function ArchivageTransactionsPage() {
   const [expProduitAgence, setExpProduitAgence] = useState<Agence | null>(null) // null = toutes
   const [expProduitDebut, setExpProduitDebut]   = useState('')
   const [expProduitFin, setExpProduitFin]       = useState('')
+
 
   // ── Chargement ──────────────────────────────────────────────
   const charger = useCallback(async (q: string, p: number, dd: string, df: string) => {
@@ -2985,6 +2988,7 @@ export default function ArchivageTransactionsPage() {
     return groups
   }, [transactions])
 
+   const formDateInvalide = formDate !== '' && formDate > today
   // ── Créer transaction ────────────────────────────────────────
   const handleCreer = async () => {
     if (!formClient || !formProduit || !formAgence || !formDate) {
@@ -3545,11 +3549,23 @@ const handleViewDoc = async (txId: number, docId: number) => {
               renderInput={(params) => <TextField {...params} label="Agence *" size="small" />}
             />
 
-            <TextField
+            {/* <TextField
               label="Date de transaction *" type="date" size="small"
               value={formDate}
               onChange={(e) => setFormDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
+            /> */}
+
+            <TextField
+              label="Date de transaction *" type="date" size="small"
+              value={formDate}
+              onChange={(e) => setFormDate(e.target.value)}
+              error={formDateInvalide}
+              helperText={formDateInvalide ? 'Date future invalide' : ' '}
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: { max: today },
+              }}
             />
 
             <Divider />

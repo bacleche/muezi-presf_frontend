@@ -280,6 +280,12 @@ statschefAgence: () => api.get('/clients/stats-chefagence/'),
     api.patch(`/clients/${clientId}/pieces/${pieceId}/renouveler/`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
+
+      exporterCsv: (params?: { pays_id?: number }) =>
+    api.get('/clients/export-csv-clients/', {
+      params,
+      responseType: 'blob',
+    }),
 }
 
 export const StatsAPI = {
