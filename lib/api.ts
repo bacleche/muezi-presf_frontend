@@ -86,21 +86,47 @@ export interface LoginData {
   password:  string
 }
 
-export interface UserBackend {
-  id:         number
-  email:      string
-  nom:        string
-  prenom:     string
-  role:       'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence' // Harmonisé ici !
-  pays:       number | null
-  agence:     number | null
-  is_active:  boolean
+// export interface UserBackend {
+//   id:         number
+//   email:      string
+//   nom:        string
+//   prenom:     string
+//   role:       'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence' // Harmonisé ici !
+//   pays:       number | null
+//   agence:     number | null
+//   is_active:  boolean
+// }
+
+interface UserBackend {
+  id: number
+  email: string
+  nom: string
+  prenom: string
+  role: 'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence'
+  pays: number | null
+  ville: number | null    // NOUVEAU — nécessaire pour distinguer conformité principale/subalterne côté front
+  agence: number | null
+  is_active: boolean
 }
 
 export interface VerifyOtpResponse {
   access:  string
   refresh: string
   user:    UserBackend
+}
+
+
+
+export interface ClasseurMensuel {
+  id:                   number
+  agence:               number
+  type_contenu:         'transactions' | 'archives'
+  annee:                number
+  mois:                 number
+  verrouille:           boolean
+  deverrouille:         boolean
+  deverrouille_par_nom: string | null
+  deverrouille_le:      string | null
 }
 
 // ── Endpoints d'API ────────────────────────────
@@ -185,6 +211,23 @@ export const agenceAPI = {
     api.get('/agences/preview-code/', { params }),
 }
 
+// export const archiveAgenceAPI = {
+//   stats: () => api.get('/archives/stats/'),
+//   liste: (params?: object) => api.get('/archives/', { params }),
+//   telechargerZip: (id: number) => api.get(`/archives/${id}/zip/`, { responseType: 'blob' }),
+//   uploadDoc: (id: number, formData: FormData) =>
+//     api.post(`/archives/${id}/documents/`, formData, {
+//       headers: { 'Content-Type': 'multipart/form-data' },
+//     }),
+//     creer: (data: { agence: number; produit: number; date: string }) =>  // ← ajouter
+//     api.post('/archives/', data),
+
+
+//   exportZip: (params: { date_debut: string; date_fin: string }) =>
+//     api.get('/archives/export-zip/', { params, responseType: 'blob' }),
+// }
+
+
 export const archiveAgenceAPI = {
   stats: () => api.get('/archives/stats/'),
   liste: (params?: object) => api.get('/archives/', { params }),
@@ -193,20 +236,79 @@ export const archiveAgenceAPI = {
     api.post(`/archives/${id}/documents/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-    creer: (data: { agence: number; produit: number; date: string }) =>  // ← ajouter
+  creer: (data: { agence: number; produit: number; date: string }) =>
     api.post('/archives/', data),
-
 
   exportZip: (params: { date_debut: string; date_fin: string }) =>
     api.get('/archives/export-zip/', { params, responseType: 'blob' }),
+
+  // NOUVEAU : Laboratoire — comparaison de deux dates
+  comparer: (params: { agence_id: number; produit_id: number; date1: string; date2: string }) =>
+    api.get('/archives/comparer/', { params }),
+
+  // NOUVEAU : remplacement d'un document (arrêté matin/soir) suite à comparaison
+  remplacerDocument: (archiveId: number, docId: number, data: FormData) =>
+    api.put(`/archives/${archiveId}/documents/${docId}/remplacer/`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  // NOUVEAU : classeurs mensuels
+  classeurs: (params: { agence_id: number }) =>
+    api.get('/archives/classeurs/', { params }),
+
+  deverrouillerClasseur: (classeurId: number) =>
+    api.post(`/archives/classeurs/${classeurId}/deverrouiller/`),
+
+  reverrouillerClasseur: (classeurId: number) =>
+    api.post(`/archives/classeurs/${classeurId}/reverrouiller/`),
+
+  nationalParVille: (params: { ville_id: number }) =>
+    api.get('/archives/national-par-ville/', { params }),
+  statsNational: () => api.get('/archives/stats-national/'),
 }
+
+
+// export const transactionAPI = {
+//   liste: (params?: object) => api.get('/transactions/', { params }),
+//   telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
+//   stats: (params?: object) => api.get('/transactions/stats/', { params }),
+//   exportCsv: (params?: object) => api.get('/transactions/export-csv/', { params, responseType: 'blob' }),
+//    detail:  (id: number)              => api.get(`/transactions/${id}/`),
+//   valider: (id: number, data: object) => api.post(`/transactions/${id}/valider/`, data),
+
+//   creer:     (data: object)                 => api.post('/transactions/', data),
+//   uploadDoc: (id: number, data: FormData)   => api.post(`/transactions/${id}/documents/`, data, {
+//     headers: { 'Content-Type': 'multipart/form-data' }
+//   }),
+
+//    exportZip: (params: {
+//     date_debut: string
+//     date_fin: string
+//     agence_id?: number
+//     client_id?: number
+//     produit_id?: number
+//   }) => api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
+
+//    afficherDoc: (txId: number, docId: number) => 
+//     api.get(`/transactions/${txId}/afficher_doc/`, { 
+//       params: { doc_id: docId }, 
+//       responseType: 'blob' 
+//     }),
+
+//     // recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string }) =>
+//     // api.get('/transactions/recap-client/', { params }),
+//     recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string; produit_id?: number }) =>
+//   api.get('/transactions/recap-client/', { params }),
+// }
+
+
 
 export const transactionAPI = {
   liste: (params?: object) => api.get('/transactions/', { params }),
   telechargerZip: (id: number) => api.get(`/transactions/${id}/zip/`, { responseType: 'blob' }),
   stats: (params?: object) => api.get('/transactions/stats/', { params }),
   exportCsv: (params?: object) => api.get('/transactions/export-csv/', { params, responseType: 'blob' }),
-   detail:  (id: number)              => api.get(`/transactions/${id}/`),
+  detail:  (id: number)              => api.get(`/transactions/${id}/`),
   valider: (id: number, data: object) => api.post(`/transactions/${id}/valider/`, data),
 
   creer:     (data: object)                 => api.post('/transactions/', data),
@@ -214,7 +316,7 @@ export const transactionAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
 
-   exportZip: (params: {
+  exportZip: (params: {
     date_debut: string
     date_fin: string
     agence_id?: number
@@ -222,17 +324,31 @@ export const transactionAPI = {
     produit_id?: number
   }) => api.get('/transactions/export-zip/', { params, responseType: 'blob' }),
 
-   afficherDoc: (txId: number, docId: number) => 
+  afficherDoc: (txId: number, docId: number) => 
     api.get(`/transactions/${txId}/afficher_doc/`, { 
       params: { doc_id: docId }, 
       responseType: 'blob' 
     }),
 
-    // recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string }) =>
-    // api.get('/transactions/recap-client/', { params }),
-    recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string; produit_id?: number }) =>
-  api.get('/transactions/recap-client/', { params }),
+  recapClient: (params: { client_id: number; date_debut?: string; date_fin?: string; produit_id?: number }) =>
+    api.get('/transactions/recap-client/', { params }),
+
+  // NOUVEAU : classeurs mensuels
+  classeurs: (params: { agence_id: number }) =>
+    api.get('/transactions/classeurs/', { params }),
+
+  deverrouillerClasseur: (classeurId: number) =>
+    api.post(`/transactions/classeurs/${classeurId}/deverrouiller/`),
+
+  reverrouillerClasseur: (classeurId: number) =>
+    api.post(`/transactions/classeurs/${classeurId}/reverrouiller/`),
+
+  nationalParVille: (params: { ville_id: number }) =>
+    api.get('/transactions/national-par-ville/', { params }),
+
+  statsNational: () => api.get('/transactions/stats-national/'),
 }
+
 
 export const produitAPI = {
   liste: () => api.get('/produits/'),
@@ -286,6 +402,9 @@ statschefAgence: () => api.get('/clients/stats-chefagence/'),
       params,
       responseType: 'blob',
     }),
+
+    verifierExistant: (data: { telephone?: string; numeros: string[] }) =>
+    api.post('/clients/verifier-existant/', data),
 }
 
 export const StatsAPI = {

@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
 
   allowedDevOrigins: [
-    "192.168.100.244",
     "192.168.100.52",
     "localhost",
   ],

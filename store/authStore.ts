@@ -125,14 +125,27 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// interface UserType {
+//   id: number
+//   email: string
+//   nom: string
+//   prenom: string
+//   role: 'caissier' | 'conformite' | 'superadmin'
+//   is_active: boolean
+// }
+
 interface UserType {
   id: number
   email: string
   nom: string
   prenom: string
-  role: 'caissier' | 'conformite' | 'superadmin'
+  role: 'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence'
+  pays: number | null
+  ville: number | null    // NOUVEAU — nécessaire pour distinguer conformité principale/subalterne côté front
+  agence: number | null
   is_active: boolean
 }
+
 
 interface AuthState {
   user: UserType | null

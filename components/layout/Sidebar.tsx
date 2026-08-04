@@ -16,9 +16,12 @@ import {
   PendingActionsOutlined, BusinessOutlined,
   AccountBalanceOutlined, SwapHorizOutlined, CategoryOutlined,
   GroupOutlined, PersonAddOutlined, BadgeOutlined,
-  ExpandLess, ExpandMore
+  ExpandLess, ExpandMore ,  LockClockOutlined,      // NOUVEAU — icône classeurs
+  PublicOutlined as MapOutlined, // ou une icône dédiée type TravelExploreOutlined
+  TravelExploreOutlined,  
 } from '@mui/icons-material'
 import useAuthStore from '@/store/authStore'
+import type { UserType } from '@/store/authStore'
 
 const DRAWER_WIDTH = 260
 
@@ -106,11 +109,56 @@ const menuParRole: MenuParRole = {
   ],
 }
 
+
+function getMenuConformite(user: UserType | null): MenuItem[] {
+  const items: MenuItem[] = [
+    { label: 'Tableau de bord',       icon: <DashboardOutlined />,      href: '/conformite' },
+    { label: 'Liste des clients',     icon: <GroupOutlined />,          href: '/conformite/clients' },
+    {
+      label: 'Conformité KYC',
+      icon: <BadgeOutlined />,
+      children: [
+        { label: 'Gestion des pièces', icon: <BadgeOutlined />, href: '/conformite/recap' },
+      ],
+    },
+    { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },
+    { label: 'Mouvements Agences',    icon: <SwapHorizOutlined />,      href: '/conformite/mouvements' },
+    // NOUVEAU : onglet Classeurs avec ses deux sous-sections
+    {
+      label: 'Classeurs',
+      icon: <LockClockOutlined />,
+      children: [
+        { label: 'Classeurs Transactions', icon: <AccountBalanceOutlined />, href: '/conformite/classeurs/transactions' },
+        { label: 'Classeurs Mouvements',   icon: <SwapHorizOutlined />,      href: '/conformite/classeurs/archives' },
+      ],
+    },
+    { label: 'Statistiques globales', icon: <BarChartOutlined />, href: '/conformite/stats' },
+  ]
+
+  // NOUVEAU : Analyse Nationale — uniquement conformité principale (pas de ville rattachée)
+  if (user?.role === 'conformite' && !user?.ville) {
+    items.push({
+      label: 'Analyse Nationale',
+      icon: <TravelExploreOutlined />,
+      href: '/conformite/analyse-nationale',
+    })
+  }
+
+  return items
+}
+
+
 function DrawerContent({ onClose, onLogout }: { onClose?: () => void, onLogout: () => void }) {
   const pathname = usePathname()
   const router   = useRouter()
   const user     = useAuthStore((s) => s.user)
-  const menu     = user?.role ? menuParRole[user.role as keyof MenuParRole] ?? [] : []
+  // const menu     = user?.role ? menuParRole[user.role as keyof MenuParRole] ?? [] : []
+  const menu: MenuItem[] =
+    user?.role === 'conformite'
+      ? getMenuConformite(user)
+      : user?.role
+        ? menuParRole[user.role as keyof MenuParRole] ?? []
+        : []
   const [openGroups, setOpenGroups] = useState<string[]>([])
 
   const navigate = (href: string) => {

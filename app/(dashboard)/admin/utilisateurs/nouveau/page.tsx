@@ -5,15 +5,26 @@ import {
   Box, Typography, Card, CardContent, Button,
   Grid as Grid, TextField, MenuItem, Alert, CircularProgress,
   Divider
-} from '@mui/material' // Importation de Grid (aliasé en Grid) pour MUI v6
+} from '@mui/material'
 import { SaveOutlined, ArrowBackOutlined } from '@mui/icons-material'
-import { userAPI, agenceAPI, paysAPI } from '@/lib/api'
+import { userAPI, agenceAPI, paysAPI, villeAPI } from '@/lib/api'
 
 interface Agence { 
   id: number 
   nom: string 
   code: string 
   ville: string 
+}
+
+interface Pays {
+  id:  number
+  nom: string
+}
+
+interface Ville {
+  id:   number
+  nom:  string
+  pays: number
 }
 
 const ROLES = [
@@ -28,16 +39,19 @@ export default function NouvelUtilisateurPage() {
   const [agences, setAgences]   = useState<Agence[]>([])
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
-  const [paysList, setPaysList] = useState<any[]>([])
+  const [paysList, setPaysList] = useState<Pays[]>([])
+  const [villesList, setVillesList] = useState<Ville[]>([])   // NOUVEAU
 
   const [form, setForm] = useState({
     email: '', nom: '', prenom: '',
     role: '', password: '', agence: '' as number | '',
-    pays: '' as number | '', // Ajout du champ pays
+    pays: '' as number | '',
+    ville: '' as number | '',   // NOUVEAU
   })
 
   useEffect(() => {
     paysAPI.liste().then(({ data }) => setPaysList(data.results || data))
+    villeAPI.liste().then(({ data }) => setVillesList(data.results || data))   // NOUVEAU
     agenceAPI.liste()
       .then(({ data }: { data: { results?: Agence[] } & Agence[] }) => {
         setAgences(data.results ?? data)
@@ -48,6 +62,12 @@ export default function NouvelUtilisateurPage() {
       })
   }, [])
 
+  // NOUVEAU : villes filtrées par le pays sélectionné (une conformité
+  // ne doit pouvoir choisir qu'une ville de son propre pays)
+  const villesFiltrees = form.pays
+    ? villesList.filter(v => v.pays === Number(form.pays))
+    : []
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setForm((prev) => {
@@ -55,85 +75,68 @@ export default function NouvelUtilisateurPage() {
       if (name === 'role' && value !== 'chef_agence') {
         updated.agence = ''
       }
-      
+      if (name === 'role' && value !== 'conformite') {
+        updated.ville = ''   // NOUVEAU : reset ville si on quitte le rôle conformité
+      }
+      if (name === 'pays') {
+        updated.ville = ''   // NOUVEAU : reset ville si on change de pays
+      }
       return updated
     })
   }
 
-  // const handleSubmit = async () => {
-  //   setLoading(true)
-  //   setError('')
-  //   try {
-  //     // Typage propre du payload pour Django : accepte strings et numbers
-  //     const payload: Record<string, string | number> = { ...form }
-      
-  //     if (form.role !== 'chef_agence' || !form.agence) {
-  //       delete payload.agence
-  //     }
-
-  //     await userAPI.creer(payload)
-  //     router.push('/admin/utilisateurs')
-  //   } catch (err: unknown) {
-  //     console.error(err)
-  //     const e = err as { response?: { data?: Record<string, string[]> } }
-  //     const msgs = Object.values(e.response?.data || {}).flat()
-  //     setError(msgs[0] || 'Erreur lors de la création de l\'utilisateur.')
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
-
   const handleSubmit = async () => {
-  setLoading(true)
-  setError('')
-  try {
-    // 1. On prépare un payload propre
-    const payload: Record<string, any> = {
-      email: form.email,
-      nom: form.nom,
-      prenom: form.prenom,
-      role: form.role,
-      password: form.password,
-    }
-
-    // 2. On n'ajoute l'agence que si le rôle est strictement 'chef_agence'
-    if (form.role === 'chef_agence') {
-      if (form.agence === '') {
-        setError("Veuillez sélectionner une agence affiliée.");
-        setLoading(false);
-        return;
+    setLoading(true)
+    setError('')
+    try {
+      const payload: Record<string, any> = {
+        email: form.email,
+        nom: form.nom,
+        prenom: form.prenom,
+        role: form.role,
+        password: form.password,
       }
-      // On s'assure d'envoyer l'ID sous forme d'entier
-      payload.agence = Number(form.agence);
-    }else if (form.role === 'chef_produit' || form.role === 'conformite') {
-      if (!form.pays) {
-        setError("Veuillez sélectionner un pays pour le Chef de Produit.")
-        setLoading(false); return;
-      }
-      payload.pays = Number(form.pays)
-    }
 
-    // 3. Envoi au serveur Django
-    await userAPI.creer(payload)
-    router.push('/admin/utilisateurs')
-  } catch (err: unknown) {
-    console.error(err)
-    const e = err as { response?: { data?: Record<string, string[] | Record<string, string[]>> } }
-    
-    // Extraction améliorée pour afficher l'erreur spécifique au champ (ex: agence ou pays)
-    if (e.response?.data) {
-      const errorData = e.response.data;
-      const msgs = Object.entries(errorData).map(([key, val]) => {
-        return `${key}: ${Array.isArray(val) ? val.join(' ') : JSON.stringify(val)}`;
-      });
-      setError(msgs[0] || "Erreur lors de la création de l'utilisateur.");
-    } else {
-      setError('Erreur lors de la création de l\'utilisateur.');
+      if (form.role === 'chef_agence') {
+        if (form.agence === '') {
+          setError("Veuillez sélectionner une agence affiliée.");
+          setLoading(false);
+          return;
+        }
+        payload.agence = Number(form.agence);
+      } else if (form.role === 'chef_produit' || form.role === 'conformite') {
+        if (!form.pays) {
+          setError("Veuillez sélectionner un pays.")
+          setLoading(false); return;
+        }
+        payload.pays = Number(form.pays)
+
+        // NOUVEAU : ville optionnelle, uniquement pour conformité
+        if (form.role === 'conformite' && form.ville) {
+          payload.ville = Number(form.ville)
+        }
+      }
+
+      await userAPI.creer(payload)
+      router.push('/admin/utilisateurs')
+    } catch (err: unknown) {
+      console.error(err)
+      const e = err as { response?: { data?: Record<string, string[] | Record<string, string[]>> } }
+      
+      if (e.response?.data) {
+        const errorData = e.response.data;
+        const msgs = Object.entries(errorData).map(([key, val]) => {
+          return `${key}: ${Array.isArray(val) ? val.join(' ') : JSON.stringify(val)}`;
+        });
+        setError(msgs[0] || "Erreur lors de la création de l'utilisateur.");
+      } else {
+        setError('Erreur lors de la création de l\'utilisateur.');
+      }
+    } finally {
+      setLoading(false)
     }
-  } finally {
-    setLoading(false)
   }
-}
+
   const agenceValide = form.role === 'chef_agence' ? form.agence !== '' : true
   
   const valide = 
@@ -216,13 +219,7 @@ export default function NouvelUtilisateurPage() {
               </Grid>
             )}
 
-            <Grid size={{ xs: 12 }}>
-              <TextField fullWidth label="Mot de passe" name="password"
-                type="password" value={form.password} onChange={handleChange}
-                required helperText="Minimum 8 caractères" />
-            </Grid>
-          </Grid>
-          {(form.role === 'chef_produit' || form.role === 'conformite') && (
+            {(form.role === 'chef_produit' || form.role === 'conformite') && (
               <Grid size={{ xs: 12 }}>
                 <TextField fullWidth select label="Pays" name="pays"
                   value={form.pays} onChange={handleChange} required>
@@ -232,6 +229,34 @@ export default function NouvelUtilisateurPage() {
                 </TextField>
               </Grid>
             )}
+
+            {/* NOUVEAU : Ville — visible uniquement pour Conformité, optionnelle */}
+            {form.role === 'conformite' && (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth select label="Ville (optionnel)" name="ville"
+                  value={form.ville} onChange={handleChange}
+                  disabled={!form.pays}
+                  helperText={
+                    !form.pays
+                      ? 'Sélectionnez un pays au préalable'
+                      : 'Laisser vide pour une conformité principale (vue nationale)'
+                  }
+                >
+                  <MenuItem value="">— Aucune (conformité principale) —</MenuItem>
+                  {villesFiltrees.map((v) => (
+                    <MenuItem key={v.id} value={v.id}>{v.nom}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
+
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Mot de passe" name="password"
+                type="password" value={form.password} onChange={handleChange}
+                required helperText="Minimum 8 caractères" />
+            </Grid>
+          </Grid>
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
