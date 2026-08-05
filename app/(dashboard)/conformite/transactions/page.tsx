@@ -357,12 +357,23 @@ function ArchivageTransactionsContent() {
       setDialogNouv(false)
       resetForm()
       charger(search, page, dateDebut, dateFin)
-    } catch(err: any) {
-      console.log("Erreur documents:", err.response?.data)
-      setError('Erreur lors de la création.')
-    } finally {
-      setSubmitting(false)
-    }
+    }  catch(err: any) {
+  console.log("Erreur documents:", err.response?.data)
+
+  const dataErr    = err.response?.data
+  const messageErr = typeof dataErr === 'string'
+    ? dataErr
+    : JSON.stringify(dataErr ?? {})
+
+  // NOUVEAU : message dédié quand le classeur mensuel de la date choisie est verrouillé
+  if (messageErr.toLowerCase().includes('classeur') || messageErr.toLowerCase().includes('verrou')) {
+    setError('Ce mois est clôturé (classeur verrouillé). Veuillez déverrouiller le classeur mensuel correspondant.')
+  } else {
+    setError('Erreur lors de la création.')
+  }
+} finally {
+  setSubmitting(false)
+}
   }
   
   const handleViewDoc = async (txId: number, docId: number) => {
