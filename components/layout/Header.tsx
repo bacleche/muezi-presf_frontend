@@ -36,8 +36,8 @@ const handleNotifClick = (n: Notification) => {
   if (n.enregistrement) {
     if (user?.role === 'conformite') {
       router.push(`/conformite/${n.enregistrement}`)
-    } else if (user?.role === 'caissier') {
-      router.push(`/caissier/enregistrements/${n.enregistrement}`)
+    } else if (user?.role === 'chef_agence') {
+      router.push(`/chef_agence/enregistrements/${n.enregistrement}`)
     } else if (user?.role === 'superadmin') {
       router.push(`/admin/enregistrements/${n.enregistrement}`)
     }
@@ -61,9 +61,9 @@ const handleNotifClick = (n: Notification) => {
   //--------------------------------------------
 
   const ROLE_LABELS: Record<string, string> = {
-  caissier:   'Caissier',
   conformite: 'Conformité',
   superadmin: 'Super Admin',
+  chef_agence: 'Chef d\'Agence'
 }
 
 
