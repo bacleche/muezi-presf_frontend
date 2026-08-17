@@ -20,7 +20,7 @@ function getBaseUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL
   }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `http://${host}/api`
+  return `https://${host}/api`
 }
 
 export function getWsUrl(): string {
