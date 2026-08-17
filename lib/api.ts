@@ -20,7 +20,7 @@ function getBaseUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL
   }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `http://${host}:8000/api`
+  return `http://${host}/api`
 }
 
 export function getWsUrl(): string {
@@ -28,7 +28,7 @@ export function getWsUrl(): string {
     return process.env.NEXT_PUBLIC_WS_URL
   }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `ws://${host}:8000`
+  return `ws://${host}`
 }
 // const api = axios.create({
 //   // baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
