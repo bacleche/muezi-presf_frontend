@@ -138,9 +138,9 @@ function getMenuConformite(user: UserType | null): MenuItem[] {
   // NOUVEAU : Analyse Nationale — uniquement conformité principale (pas de ville rattachée)
   if (user?.role === 'conformite' && !user?.ville) {
     items.push({
-      label: 'Analyse Nationale',
+      label: 'Analyse Inter-Nationale',
       icon: <TravelExploreOutlined />,
-      href: '/conformite/analyse-nationale',
+      href: '/conformite/analyse-internationale',
     })
   }
 

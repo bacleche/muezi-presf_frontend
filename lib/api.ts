@@ -265,6 +265,10 @@ export const archiveAgenceAPI = {
   nationalParVille: (params: { ville_id: number }) =>
     api.get('/archives/national-par-ville/', { params }),
   statsNational: () => api.get('/archives/stats-national/'),
+
+  internationalParVille: (params: { ville_id: number }) =>
+    api.get('/archives/international-par-ville/', { params }),
+  statsInternational: () => api.get('/archives/stats-international/'),
 }
 
 
@@ -345,6 +349,11 @@ export const transactionAPI = {
 
   nationalParVille: (params: { ville_id: number }) =>
     api.get('/transactions/national-par-ville/', { params }),
+
+  internationalParVille: (params: { ville_id: number }) =>
+    api.get('/transactions/international-par-ville/', { params }),
+
+  statsInternational: () => api.get('/transactions/stats-international/'),
 
   statsNational: () => api.get('/transactions/stats-national/'),
 }

@@ -25,7 +25,7 @@ import {
   ApartmentOutlined,
   ScienceOutlined,
 } from '@mui/icons-material'
-import { archiveAgenceAPI, agenceAPI, produitAPI } from '@/lib/api'
+import { archiveAgenceAPI, agenceAPI, produitAPI, userAPI, villeAPI } from '@/lib/api'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -33,6 +33,22 @@ interface Agence {
   id: number
   nom: string
   code: string
+}
+
+// NOUVEAU : ville (pour le filtre réservé à la conformité principale)
+interface Ville {
+  id: number
+  nom: string
+  pays_nom?: string
+}
+
+// NOUVEAU : utilisateur courant — sert à détecter la conformité principale
+// (role === 'conformite' && ville === null)
+interface CurrentUser {
+  id: number
+  role: 'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence'
+  pays: number | null
+  ville: number | null
 }
 
 interface Produit {
@@ -56,6 +72,8 @@ interface Archive {
   agence: number
   agence_nom: string
   agence_code: string
+  agence_ville: number | null
+  agence_ville_nom?: string
   produit: number
   produit_nom: string
   date: string
@@ -686,12 +704,20 @@ function NouvelleArchiveModal({
       await onCreate({ agence: agenceId as number, produit: produitId as number, date })
       setAgenceId(''); setProduitId(''); setDate('')
       onClose()
-    } catch {
+    } catch (err: any) {
+    const dataErr    = err?.response?.data
+    const messageErr = typeof dataErr === 'string' ? dataErr : JSON.stringify(dataErr ?? {})
+
+    // NOUVEAU : message dédié quand le classeur mensuel de la date choisie est verrouillé
+    if (err?.response?.status === 403 || messageErr.toLowerCase().includes('classeur') || messageErr.toLowerCase().includes('verrou')) {
+      setError('Ce mois est clôturé (classeur verrouillé). Veuillez déverrouiller le classeur mensuel correspondant.')
+    } else {
       setError('Erreur lors de la création. Veuillez réessayer.')
-    } finally {
-      setLoading(false)
     }
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -982,6 +1008,13 @@ function MouvementsAgencesContent() {
   const [error,        setError]        = useState('')
   const [modalOpen,    setModalOpen]    = useState(false)
 
+  // NOUVEAU : utilisateur courant + villes, pour le filtre "Ville"
+  // réservé à la conformité principale (role === 'conformite' && !ville)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [villes,      setVilles]      = useState<Ville[]>([])
+  const estConformitePrincipale =
+    currentUser?.role === 'conformite' && !currentUser?.ville
+
   // NOUVEAU : contexte "classeur"
   const [contexteClasseur, setContexteClasseur] = useState<string | null>(null)
 
@@ -991,6 +1024,7 @@ function MouvementsAgencesContent() {
   const [filtreStatut,  setFiltreStatut]  = useState('')
   const [filtreDebut,   setFiltreDebut]   = useState('')
   const [filtreFin,     setFiltreFin]     = useState('')
+  const [filtreVille,   setFiltreVille]   = useState('')
 
   const [labJourOpen,    setLabJourOpen]    = useState(false)
   const [labJourArchive, setLabJourArchive] = useState<Archive | null>(null)
@@ -1001,14 +1035,24 @@ function MouvementsAgencesContent() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [archRes, agRes, prRes] = await Promise.all([
+        const [archRes, agRes, prRes, meRes] = await Promise.all([
           archiveAgenceAPI.liste(),
           agenceAPI.liste(),
           produitAPI.liste(),
+          userAPI.me(),
         ])
         setArchives(archRes.data.results ?? archRes.data)
         setAgences(agRes.data.results   ?? agRes.data)
         setProduits(prRes.data.results  ?? prRes.data)
+        setCurrentUser(meRes.data)
+
+        // Filtre "Ville" réservé à la conformité principale : on ne
+        // charge la liste des villes (toutes villes, tous pays) que
+        // pour ce profil.
+        if (meRes.data?.role === 'conformite' && !meRes.data?.ville) {
+          const villesRes = await villeAPI.liste()
+          setVilles(villesRes.data.results ?? villesRes.data)
+        }
       } catch {
         setError('Impossible de charger les données.')
       } finally {
@@ -1043,6 +1087,8 @@ function MouvementsAgencesContent() {
     if (filtreProduit && String(a.produit) !== filtreProduit) return false
     if (filtreDebut   && a.date < filtreDebut)                return false
     if (filtreFin     && a.date > filtreFin)                  return false
+    // NOUVEAU : filtre ville, actif uniquement pour la conformité principale
+    if (estConformitePrincipale && filtreVille && String(a.agence_ville) !== filtreVille) return false
     if (filtreStatut) {
       const st = getStatut(a)
       if (filtreStatut === 'complet' && st.color !== 'success') return false
@@ -1260,6 +1306,28 @@ function MouvementsAgencesContent() {
               />
             </Grid>
 
+            {/* NOUVEAU : filtre Ville, réservé à la conformité principale
+                (toutes villes de tous les pays de la plateforme) */}
+            {estConformitePrincipale && (
+              <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Ville</InputLabel>
+                  <Select
+                    value={filtreVille}
+                    label="Ville"
+                    onChange={e => setFiltreVille(e.target.value)}
+                  >
+                    <MenuItem value="">Toutes</MenuItem>
+                    {villes.map(v => (
+                      <MenuItem key={v.id} value={String(v.id)}>
+                        {v.nom}{v.pays_nom ? ` (${v.pays_nom})` : ''}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+
             <Grid size={{ xs: 12, sm: 4, md: 2 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Statut</InputLabel>
@@ -1285,6 +1353,7 @@ function MouvementsAgencesContent() {
                   setFiltreStatut('')
                   setFiltreDebut('')
                   setFiltreFin('')
+                  setFiltreVille('')
                   setContexteClasseur(null)
                 }}
               >
