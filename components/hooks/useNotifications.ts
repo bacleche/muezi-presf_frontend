@@ -72,7 +72,7 @@ export interface Notification {
   enregistrement?: number
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://192.168.100.52:8000/api'
 
 // ── State global partagé hors du composant ──────────
 // Évite les doublons si le hook est appelé depuis plusieurs composants

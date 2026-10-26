@@ -115,7 +115,7 @@ export default function VerifyOtpPage() {
       router.push('/conformite')
     } else if (user.role === 'chef_produit') {
       router.push('/chef-produit')
-    } else if (user.role === 'chef_agence') {
+    } else if (user.role === 'caissier') {
       router.push('/chef-agence') 
     } else {
       router.push('/') // Redirection par défaut si aucun rôle ne correspond

@@ -3,33 +3,33 @@
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 
-// function getBaseUrl(): string {
-//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-//   if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000/api'
-//   return `http://${host}:8000/api`
-// }
-
-// export function getWsUrl(): string {
-//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-//   if (host === 'localhost' || host === '127.0.0.1') return 'ws://localhost:8000'
-//   return `ws://${host}:8000`
-// }
-
 function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL
-  }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `https://${host}/api`
+  if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000/api'
+  return `http://${host}:8000/api`
 }
 
 export function getWsUrl(): string {
-  if (process.env.NEXT_PUBLIC_WS_URL) {
-    return process.env.NEXT_PUBLIC_WS_URL
-  }
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-  return `ws://${host}`
+  if (host === 'localhost' || host === '127.0.0.1') return 'ws://localhost:8000'
+  return `ws://${host}:8000`
 }
+
+// function getBaseUrl(): string {
+//   if (process.env.NEXT_PUBLIC_API_URL) {
+//     return process.env.NEXT_PUBLIC_API_URL
+//   }
+//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+//   return `https://${host}/api`
+// }
+
+// export function getWsUrl(): string {
+//   if (process.env.NEXT_PUBLIC_WS_URL) {
+//     return process.env.NEXT_PUBLIC_WS_URL
+//   }
+//   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+//   return `ws://${host}`
+// }
 // const api = axios.create({
 //   // baseURL: process.env.NEXT_PUBLIC_API_URL, // Exemple: http://localhost:8000/api
 //   baseURL: getBaseUrl(),
@@ -316,6 +316,7 @@ export const transactionAPI = {
   valider: (id: number, data: object) => api.post(`/transactions/${id}/valider/`, data),
 
   creer:     (data: object)                 => api.post('/transactions/', data),
+  modifier:  (id: number, data: object)     => api.patch(`/transactions/${id}/`, data),
   uploadDoc: (id: number, data: FormData)   => api.post(`/transactions/${id}/documents/`, data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
@@ -356,6 +357,7 @@ export const transactionAPI = {
   statsInternational: () => api.get('/transactions/stats-international/'),
 
   statsNational: () => api.get('/transactions/stats-national/'),
+  
 }
 
 

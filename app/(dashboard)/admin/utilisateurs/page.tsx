@@ -23,7 +23,7 @@ interface User {
   email:      string
   nom:        string
   prenom:     string
-  role:       'conformite' | 'chef_agence' | 'chef_produit' | 'superadmin'
+  role:       'conformite' | 'caissier' | 'chef_produit' | 'superadmin'
   is_active:  boolean
   agence:     number | null
   agence_nom: string | null
@@ -55,14 +55,14 @@ interface Ville {              // NOUVEAU
 
 const ROLE_LABELS: Record<string, { label: string; color: 'default' | 'primary' | 'secondary' | 'warning' | 'info' }> = {
   conformite:   { label: 'Conformité',      color: 'primary'   },
-  chef_agence:  { label: "Chef d'agence",   color: 'warning'   },
+  caissier:  { label: "Caissier",   color: 'warning'   },
   chef_produit: { label: 'Chef de produit', color: 'info'      },
   superadmin:   { label: 'Super Admin',     color: 'secondary' },
 }
 
 const ROLES = [
   { value: 'conformite',   label: 'Conformité' },
-  { value: 'chef_agence',  label: "Chef d'agence" },
+  { value: 'caissier',  label: "Caissier" },
   { value: 'chef_produit', label: 'Chef de produit' },
   { value: 'superadmin',   label: 'Super Admin' },
 ]
@@ -222,7 +222,7 @@ export default function UtilisateursPage() {
     setEditForm(prev => {
       const updated = { ...prev, [name]: value }
       if (name === 'role') {
-        if (value !== 'chef_agence') updated.agence = ''
+        if (value !== 'caissier') updated.agence = ''
         if (!ROLES_AVEC_PAYS.includes(value)) updated.pays = ''
         if (value !== 'conformite') updated.ville = ''   // NOUVEAU
       }
@@ -255,8 +255,8 @@ export default function UtilisateursPage() {
         payload.password = editForm.password
       }
 
-      // Champ agence : chef_agence uniquement
-      if (editForm.role === 'chef_agence') {
+      // Champ agence : caissier uniquement
+      if (editForm.role === 'caissier') {
         if (editForm.agence === '') {
           setEditError("Veuillez sélectionner une agence affiliée.")
           setEditLoading(false)
@@ -456,8 +456,8 @@ export default function UtilisateursPage() {
                         Modifier
                       </Button>
                     </Tooltip>
-                    {/* Affecter agence — chef_agence seulement */}
-                    {u.role === 'chef_agence' && (
+                    {/* Affecter agence — caissier seulement */}
+                    {u.role === 'caissier' && (
                       <Tooltip title="Muter vers une agence">
                         <Button
                           size="small" variant="outlined" color="warning"
@@ -560,7 +560,7 @@ export default function UtilisateursPage() {
             {ROLES.map(r => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
           </TextField>
 
-          {editForm.role === 'chef_agence' && (
+          {editForm.role === 'caissier' && (
             <TextField fullWidth select label="Agence affiliée" name="agence" size="small"
               value={editForm.agence} onChange={handleEditChange} sx={{ mb: 2 }}>
               {agences.map(a => (

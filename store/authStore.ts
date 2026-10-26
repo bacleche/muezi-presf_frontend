@@ -139,7 +139,7 @@ interface UserType {
   email: string
   nom: string
   prenom: string
-  role: 'superadmin' | 'conformite' | 'chef_produit' | 'chef_agence'
+  role: 'superadmin' | 'conformite' | 'chef_produit' | 'caissier'
   pays: number | null
   ville: number | null    // NOUVEAU — nécessaire pour distinguer conformité principale/subalterne côté front
   agence: number | null

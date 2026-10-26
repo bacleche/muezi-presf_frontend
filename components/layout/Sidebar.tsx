@@ -37,7 +37,7 @@ interface MenuParRole {
   conformite:   MenuItem[]
   superadmin:   MenuItem[]
   chef_produit: MenuItem[]
-  chef_agence:  MenuItem[]
+  caissier:  MenuItem[]
 }
 
 const menuParRole: MenuParRole = {
@@ -88,7 +88,7 @@ const menuParRole: MenuParRole = {
     },
     { label: 'Déconnexion', icon: <LogoutOutlined />, isLogout: true },
   ],
-  chef_agence: [
+  caissier: [
     { label: 'Tableau de bord', icon: <DashboardOutlined />, href: '/chef-agence' },
     {
       label: 'Clients',

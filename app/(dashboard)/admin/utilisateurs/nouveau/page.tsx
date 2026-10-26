@@ -29,7 +29,7 @@ interface Ville {
 
 const ROLES = [
   { value: 'conformite',  label: 'Conformité' },
-  { value: 'chef_agence', label: "Chef d'agence" },
+  { value: 'caissier', label: "Caissier" },
   { value: 'chef_produit',label: 'Chef de produit' },
   { value: 'superadmin',  label: 'Super Admin' },
 ]
@@ -72,7 +72,7 @@ export default function NouvelUtilisateurPage() {
     const { name, value } = e.target
     setForm((prev) => {
       const updated = { ...prev, [name]: value }
-      if (name === 'role' && value !== 'chef_agence') {
+      if (name === 'role' && value !== 'caissier') {
         updated.agence = ''
       }
       if (name === 'role' && value !== 'conformite') {
@@ -97,7 +97,7 @@ export default function NouvelUtilisateurPage() {
         password: form.password,
       }
 
-      if (form.role === 'chef_agence') {
+      if (form.role === 'caissier') {
         if (form.agence === '') {
           setError("Veuillez sélectionner une agence affiliée.");
           setLoading(false);
@@ -137,7 +137,7 @@ export default function NouvelUtilisateurPage() {
     }
   }
 
-  const agenceValide = form.role === 'chef_agence' ? form.agence !== '' : true
+  const agenceValide = form.role === 'caissier' ? form.agence !== '' : true
   
   const valide = 
     !!form.email && 
@@ -206,7 +206,7 @@ export default function NouvelUtilisateurPage() {
               </TextField>
             </Grid>
 
-            {form.role === 'chef_agence' && (
+            {form.role === 'caissier' && (
               <Grid size={{ xs: 12 }}>
                 <TextField fullWidth select label="Agence affiliée" name="agence"
                   value={form.agence} onChange={handleChange} required>
