@@ -128,7 +128,7 @@ function getMenuConformite(user: UserType | null): MenuItem[] {
       label: 'Classeurs',
       icon: <LockClockOutlined />,
       children: [
-        { label: 'Classeurs Transactions', icon: <AccountBalanceOutlined />, href: '/conformite/classeurs/transactions' },
+        // { label: 'Classeurs Transactions', icon: <AccountBalanceOutlined />, href: '/conformite/classeurs/transactions' },
         { label: 'Classeurs Mouvements',   icon: <SwapHorizOutlined />,      href: '/conformite/classeurs/archives' },
       ],
     },
