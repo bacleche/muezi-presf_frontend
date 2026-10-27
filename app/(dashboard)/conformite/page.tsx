@@ -314,14 +314,18 @@ export default function ConformiteDashboardPage() {
             </IconButton>
           </Tooltip>
           {/* Bouton 1 — Transactions */}
-          <Button
+          {/* recuperation transaction 27 octobre 2026 */}
+
+          {/* <Button
             size="small"
             variant="outlined"
             startIcon={<ReceiptLongOutlined sx={{ fontSize: 16 }} />}
             onClick={() => setZipTxOpen(true)}
           >
             Récupérer transactions
-          </Button>
+          </Button> */}
+          {/* recuperation transaction 27 octobre 2026 */}
+
           {/* Bouton 2 — Mouvements agence */}
           <Button
             size="small"
