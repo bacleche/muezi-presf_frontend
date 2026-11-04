@@ -124,6 +124,8 @@ function getMenuConformite(user: UserType | null): MenuItem[] {
     //   ],
     // },
     // { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },
+    { label: 'Agences',    icon: <BusinessOutlined />,      href: '/conformite/agences' },
+
     { label: 'Mouvements Agences',    icon: <SwapHorizOutlined />,      href: '/conformite/mouvements' },
     // NOUVEAU : onglet Classeurs avec ses deux sous-sections
     {
