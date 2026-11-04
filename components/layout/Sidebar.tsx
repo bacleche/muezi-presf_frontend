@@ -51,7 +51,9 @@ const menuParRole: MenuParRole = {
     //     { label: 'Gestion des pièces', icon: <BadgeOutlined />,      href: '/conformite/recap' },
     //   ],
     // },
-    // { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },
+    // { label: 'Transactions Clients',  icon: <AccountBalanceOutlined />, href: '/conformite/transactions' },icon: <BusinessOutlined />,
+    { label: 'Agences',    icon: <BusinessOutlined />,      href: '/conformite/agences' },
+
     { label: 'Mouvements Agences',    icon: <SwapHorizOutlined />,      href: '/conformite/mouvements' },
     // { label: 'Archives & Exports',    icon: <FolderOutlined />,         href: '/conformite/archives' },
     { label: 'Statistiques globales', icon: <BarChartOutlined />,       href: '/conformite/stats' },
